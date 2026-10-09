@@ -135,6 +135,10 @@ On Cloudflare D1 the same split uses D1's limit of 100 bound parameters per stat
 statements go out as one batch, so a large save is all or nothing there too. D1 also caps the
 statements per Worker invocation (1,000 on Paid, 50 on Free), which a very large save can exceed.
 
+A query that filters on a long list of values, such as `p.ids.includes(x.id)` with more than 32
+ids, binds the whole list as one JSON parameter (`IN (SELECT value FROM json_each(?))`), so it
+fits D1's 100-parameter limit and SQLite's at any length.
+
 ### Column types
 
 SQLite has no boolean, date, array, or object column type. The plugin maps them as follows.

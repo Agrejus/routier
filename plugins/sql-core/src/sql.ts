@@ -129,6 +129,7 @@ export interface SqlDialect {
     arrayContainsExpression(column: string, placeholder: string): string;
     /** The parameter `arrayContainsExpression` expects, from the value the caller compared. */
     encodeArrayContainsValue(value: unknown): unknown;
+    listSource(values: readonly unknown[], placeholder: () => string): ListSource;
     /**
      * Reads a value out of a JSON column so a nested property can be filtered on.
      *
@@ -174,6 +175,23 @@ const jsonPathLiteral = (path: string[]): string =>
  * A `Date` still has to become one: a driver binds a string, and `s.date()` is stored as ISO, so a
  * filter comparing a Date param has to be bound in the same form the column holds.
  */
+export type ListSource = { sql: string; params: readonly unknown[] };
+
+export const JSON_LIST_FROM = 32;
+
+const placeholderList = (values: readonly unknown[], placeholder: () => string): ListSource => ({
+    sql: `(${values.map(() => placeholder()).join(", ")})`,
+    params: values,
+});
+
+const carriesExactlyInJson = (value: unknown): boolean =>
+    value === null || typeof value === "string" || Number.isFinite(value);
+
+const jsonEachList = (values: readonly unknown[], placeholder: () => string): ListSource =>
+    values.length > JSON_LIST_FROM && values.every(carriesExactlyInJson)
+        ? { sql: `(SELECT value FROM json_each(${placeholder()}))`, params: [JSON.stringify(values)] }
+        : placeholderList(values, placeholder);
+
 const passThroughDate = (value: unknown): unknown =>
     value instanceof Date ? (Number.isNaN(value.getTime()) ? value : value.toISOString()) : value;
 
@@ -307,6 +325,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeArrayContainsValue(value) {
             return typeof value === "boolean" ? integerBoolean(value) : value;
         },
+        listSource: jsonEachList,
         /**
          * `json_extract` is the one extractor that already returns a typed value — INTEGER,
          * REAL or TEXT as the document holds it — so SQLite needs no cast. JSON1 has been
@@ -376,6 +395,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeArrayContainsValue(value) {
             return JSON.stringify(value);
         },
+        listSource: placeholderList,
         /**
          * `->` to navigate and `->>` for the final hop, which yields text. The cast back to
          * the declared type is what makes `count > 9` order numerically instead of
@@ -451,6 +471,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeArrayContainsValue(value) {
             return JSON.stringify(value);
         },
+        listSource: placeholderList,
         /**
          * `JSON_EXTRACT` alone returns a JSON scalar, so a string comes back still wearing
          * its quotes and `= 'deep'` never matches. `JSON_UNQUOTE` strips them.
@@ -528,6 +549,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeArrayContainsValue(value) {
             return value;
         },
+        listSource: placeholderList,
         /** `JSON_VALUE` returns nvarchar, so numbers and booleans both need rewriting. */
         jsonPathExpression(rootColumn, path, leafType) {
             const extracted = `JSON_VALUE(${rootColumn}, ${sqlStringLiteral(jsonPathLiteral(path))})`;
@@ -940,9 +962,9 @@ function renderStringPatternComparison(
         }
 
         if (Array.isArray(value)) {
-            const placeholders = value.map(() => placeholder()).join(", ");
-            params.push(...value.map(item => typeof item === "boolean" ? d.encodeBoolean(item) : item));
-            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
+            const list = d.listSource(value.map(item => typeof item === "boolean" ? d.encodeBoolean(item) : item), placeholder);
+            params.push(...list.params);
+            return cmp.negated ? `${col} NOT IN ${list.sql}` : `${col} IN ${list.sql}`;
         }
 
         // `tags.includes(x)` where `tags` is an array property is MEMBERSHIP, not substring
