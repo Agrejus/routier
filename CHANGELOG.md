@@ -3,6 +3,28 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Long value lists on Cloudflare D1 (2026-10-09)
+
+Patches to `@routier/sql-plugin-core` and `@routier/sqlite-plugin`. `@routier/sql-plugin-core`
+floors move to `>=0.7.3` in the repository; `@routier/sqlite-plugin` is released with that floor
+so its users get the fix. The other SQL plugins are not released and keep their published ranges.
+
+### Fixed — @routier/sql-plugin-core 0.7.3
+
+- A query filtering on a list of values, such as `p.ids.includes(x.id)`, no longer fails on D1
+  past 100 values. The `sqlite` dialect binds a list of more than 32 values as one JSON parameter,
+  `IN (SELECT value FROM json_each(?))`, the form Cloudflare documents for D1; it also lifts
+  SQLite's own 32,766 limit. Shorter lists, the PostgreSQL, MySQL and MSSQL dialects, and lists
+  holding a Date, NaN or Infinity keep one placeholder per value. One behaviour changes: a JS
+  number in a long list no longer matches a TEXT column holding its text form (`1` against
+  `'1.0'`), which agrees with JavaScript (#124, #125).
+- `SqlDialect` gains a `listSource` member. Only code that implements its own dialect is
+  affected.
+
+### Fixed — @routier/sqlite-plugin 0.6.4
+
+- Requires `@routier/sql-plugin-core` 0.7.3 or later, for the fix above.
+
 ## Large saves on Cloudflare D1 (2026-10-09)
 
 Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.3` in the
