@@ -93,6 +93,11 @@ module.exports = {
         },
         {
             ...base,
+            displayName: 'playground',
+            testMatch: ['<rootDir>/examples/playground/src/**/*.test.ts'],
+        },
+        {
+            ...base,
             displayName: 'datastore',
             testMatch: ['<rootDir>/datastore/**/*.test.ts'],
         },

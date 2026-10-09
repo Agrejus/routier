@@ -118,15 +118,6 @@ code { font-family: var(--mono); font-size: 0.9em; }
     color: #d4dae6;
 }
 .code code { font-size: inherit; }
-.code-line { display: block; padding-right: 16px; white-space: pre; }
-.line-number {
-    display: inline-block;
-    width: 3.2em;
-    padding-right: 1.2em;
-    text-align: right;
-    color: #4d5566;
-    user-select: none;
-}
 
 .run-button {
     padding: 6px 14px;
@@ -326,3 +317,23 @@ code { font-family: var(--mono); font-size: 0.9em; }
 .local h2 { margin: 0 0 8px; font-size: 1.2rem; }
 .local p { color: var(--muted); line-height: 1.6; }
 .local .code { padding: 14px 16px; border-radius: 8px; background: rgba(0, 0, 0, 0.25); white-space: pre; }
+
+.editor { height: 520px; min-height: 320px; }
+.editor > .muted { padding: 16px; }
+.workspace.is-wide .editor { height: 440px; }
+
+.toolbar { display: flex; align-items: center; gap: 10px; }
+
+.tool-button {
+    padding: 4px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.tool-button:hover:not(:disabled) { border-color: var(--brand-strong); color: var(--brand); }
+.tool-button:disabled { opacity: 0.4; cursor: default; }

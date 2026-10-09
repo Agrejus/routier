@@ -15,7 +15,19 @@ export default defineConfig({
             '@routier/memory-plugin',
             '@routier/dexie-plugin',
             '@routier/react',
+            '@routier/browser-storage-plugin',
+            '@routier/sqlite-plugin',
+            '@sqlite.org/sqlite-wasm',
+            '@routier/postgres-plugin-core',
+            '@routier/pglite-plugin',
+            '@electric-sql/pglite',
         ],
+    },
+    worker: {
+        format: 'es',
+    },
+    build: {
+        chunkSizeWarningLimit: 4500,
     },
     server: {
         port: 5220,
