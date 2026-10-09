@@ -26,23 +26,24 @@ import type { PostgresConnection, PostgresDriver } from './drivers/types';
 export const RECOVERABLE_SQLSTATE = {
     undefinedTable: '42P01',
     duplicateTable: '42P07',
+    duplicateObject: '42710',
     uniqueViolation: '23505',
 } as const;
 
-const { undefinedTable: UNDEFINED_TABLE, duplicateTable: DUPLICATE_TABLE, uniqueViolation: UNIQUE_VIOLATION } = RECOVERABLE_SQLSTATE;
+const { undefinedTable: UNDEFINED_TABLE, duplicateTable: DUPLICATE_TABLE, duplicateObject: DUPLICATE_OBJECT, uniqueViolation: UNIQUE_VIOLATION } = RECOVERABLE_SQLSTATE;
 
 const errorCode = (error: unknown): string | undefined =>
     (error as { code?: unknown } | null)?.code as string | undefined;
 
 /**
  * Two connections creating one table at once collide in the system catalog even with
- * `IF NOT EXISTS`: `42P07`, or `23505` on `pg_type_typname_nsp_index`. Either way the other
- * connection won and the table now exists.
+ * `IF NOT EXISTS`: `42P07`, `42710` for the table's row type, or `23505` on
+ * `pg_type_typname_nsp_index`. Either way the other connection won and the table now exists.
  */
 const lostTableCreationRace = (error: unknown): boolean => {
     const code = errorCode(error);
 
-    return code === DUPLICATE_TABLE || code === UNIQUE_VIOLATION;
+    return code === DUPLICATE_TABLE || code === DUPLICATE_OBJECT || code === UNIQUE_VIOLATION;
 };
 
 /**
