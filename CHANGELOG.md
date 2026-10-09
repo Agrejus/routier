@@ -3,6 +3,19 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## SQLite saves of any size (2026-10-09)
+
+Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.2` in the
+repository.
+
+### Fixed — @routier/sqlite-plugin 0.6.2
+
+- A save of any size works. Each kind of change was sent as one statement, so adding 1,000 rows
+  of a 42-column schema or 40,000 rows failed with `too many SQL variables`, and removing more
+  than about 1,000 rows failed with `Expression tree is too large`. Adds, updates and removes are
+  now split into statements of at most 32,766 parameters and 500 removed rows, all inside the
+  save's one transaction, so a large save is still all or nothing (#114, #116).
+
 ## Faster SQLite in Node and in-memory databases that keep their rows (2026-10-08)
 
 Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.1` in the
