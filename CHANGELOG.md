@@ -3,6 +3,20 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## PostgreSQL table creation under concurrency (2026-10-09)
+
+Patch to `@routier/postgres-plugin-core`. The `@routier/postgresql-plugin` and
+`@routier/pglite-plugin` floors move to `>=0.3.4` in the repository; those packages are not
+released here and keep their published ranges, which already accept 0.3.4.
+
+### Fixed — @routier/postgres-plugin-core 0.3.4
+
+- Several instances writing to a new table at the same moment no longer fail with
+  `type "..." already exists`. Losing the `CREATE TABLE IF NOT EXISTS` race can surface as
+  `42710` duplicate_object (the table's row type) as well as `42P07` or `23505`; it is now
+  recognised like the other two, so the query or save carries on against the table the other
+  connection created (#118, #119).
+
 ## SQLite saves of any size (2026-10-09)
 
 Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.2` in the

@@ -39,7 +39,7 @@
     "peerDependencies": {
         "@routier/core": ">=0.9.3",
         "@routier/sql-plugin-core": ">=0.7.2",
-        "@routier/postgres-plugin-core": ">=0.3.3"
+        "@routier/postgres-plugin-core": ">=0.3.4"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
@@ -49,7 +49,7 @@
         "@rspack/core": "^1.1.8",
         "@types/pg": "8.18.0",
         "@routier/sql-plugin-core": "^0.7.2",
-        "@routier/postgres-plugin-core": "^0.3.3"
+        "@routier/postgres-plugin-core": "^0.3.4"
     },
     "dependencies": {
         "pg": "^8.11.3"
