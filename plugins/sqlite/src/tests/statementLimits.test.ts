@@ -1,6 +1,9 @@
 import { afterAll, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
-import { chunksOf, rowsPerStatement, SQLITE_MAX_OR_TERMS, SQLITE_MAX_PARAMS } from '../statementLimits';
+import { chunksOf, D1_LIMITS, rowsPerStatement, SQLITE_LIMITS } from '../statementLimits';
+
+const SQLITE_MAX_PARAMS = SQLITE_LIMITS.maxParams;
+const SQLITE_MAX_OR_TERMS = SQLITE_LIMITS.maxOrTerms;
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -78,7 +81,20 @@ describe('rowsPerStatement', () => {
         ['ignores a cap above what the parameters allow', 4, SQLITE_MAX_PARAMS, Math.floor(SQLITE_MAX_PARAMS / 4)],
         ['still sends one row when a row alone exceeds the limit', SQLITE_MAX_PARAMS + 1, undefined, 1],
     ])('%s', (_label, paramsPerRow, maxRows, expected) => {
-        expect(rowsPerStatement(paramsPerRow, maxRows)).toBe(expected);
+        expect(rowsPerStatement(SQLITE_LIMITS, paramsPerRow, maxRows)).toBe(expected);
+    });
+});
+
+describe('the limits each engine is held to', () => {
+    it.each([
+        ['SQLite', SQLITE_LIMITS, { maxParams: 32_766, maxOrTerms: 500 }],
+        ['Cloudflare D1', D1_LIMITS, { maxParams: 100, maxOrTerms: 500 }],
+    ])('%s', (_engine, limits, expected) => {
+        expect(limits).toEqual(expected);
+    });
+
+    it('fits rows to the engine it is given', () => {
+        expect(rowsPerStatement(D1_LIMITS, 3)).toBe(33);
     });
 });
 

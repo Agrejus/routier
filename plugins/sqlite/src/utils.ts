@@ -5,7 +5,7 @@ import { etagToGenerate, stampEtag } from '@routier/core/plugins';
 import type { EtagMode } from '@routier/core/schema';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { chunksOf, rowsPerStatement, SQLITE_MAX_OR_TERMS } from './statementLimits';
+import { chunksOf, rowsPerStatement, SQLITE_LIMITS, type StatementLimits } from './statementLimits';
 import { SqlOperation } from './types';
 
 /**
@@ -192,7 +192,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     return { sql, params };
 }
 
-export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>, etagMode?: EtagMode): {
+export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>, etagMode?: EtagMode, limits: StatementLimits = SQLITE_LIMITS): {
     adds: SqlOperation[];
     updates: SqlOperation[];
     removes: SqlOperation[];
@@ -240,7 +240,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         };
     };
 
-    const addsOperations = chunksOf(adds, rowsPerStatement(insertColumns.length)).map(insertStatement);
+    const addsOperations = chunksOf(adds, rowsPerStatement(limits, insertColumns.length)).map(insertStatement);
 
     // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
     // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
@@ -250,7 +250,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // reported as a conflict on that exact row.
     const groupedUpdateOperations = (): SqlOperation[] => chunksOf(
         updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-        rowsPerStatement(2 * (columnProperties.length + 1) + 1)
+        rowsPerStatement(limits, 2 * (columnProperties.length + 1) + 1)
     ).flatMap(chunk => buildGroupedUpdateOperations(
         schema,
         chunk,
@@ -288,7 +288,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         };
     };
 
-    const removesOperations = chunksOf(removes, rowsPerStatement(idProperties.length, SQLITE_MAX_OR_TERMS)).map(deleteStatement);
+    const removesOperations = chunksOf(removes, rowsPerStatement(limits, idProperties.length, limits.maxOrTerms)).map(deleteStatement);
 
     return {
         adds: addsOperations,

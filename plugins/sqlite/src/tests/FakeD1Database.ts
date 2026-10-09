@@ -24,6 +24,8 @@ import type { D1Database, D1PreparedStatement } from '../d1';
  * Those are assumptions this file encodes rather than checks — the same caveat the Turso
  * driver carries for running over a local `file:` URL. Recorded in `specs/plugin-roadmap.md`.
  */
+export const D1_MAX_BOUND_PARAMETERS = 100;
+
 export class FakeD1Database implements D1Database {
 
     private readonly database: DatabaseSync;
@@ -57,6 +59,10 @@ export class FakeD1Database implements D1Database {
 
     /** Runs one statement, recording it. Rows come back for everything, including RETURNING. */
     private run(sql: string, params: readonly unknown[]): unknown[] {
+        if (params.length > D1_MAX_BOUND_PARAMETERS) {
+            throw new Error(`D1_ERROR: too many SQL variables: ${params.length} bound, D1 allows ${D1_MAX_BOUND_PARAMETERS}`);
+        }
+
         this.executed.push(sql);
 
         const bindable = params.map(value => (value === undefined ? null : value)) as never[];
