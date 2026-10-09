@@ -1,6 +1,7 @@
 import { canPushDownJoin, CASING_CALLS, casingWarning, decodeJsonColumns, joinToPushDown, reportDivergentCalls, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, ConcurrencyDbPlugin, UnknownRecord } from '@routier/core';
 import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
+import { D1_LIMITS } from './statementLimits';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaCollection } from '@routier/core/collections';
@@ -373,7 +374,7 @@ export class D1DbPlugin implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
-            const persistOperations = buildFromPersistOperation(schema, changes, event.etags);
+            const persistOperations = buildFromPersistOperation(schema, changes, event.etags, D1_LIMITS);
             const createTableSql = this.resolveTableCreateStatement(schema);
 
             creates.set(schema.collectionName, createTableSql);

@@ -131,6 +131,10 @@ A save of any size works. Adds, updates and removes are split into as many state
 limits need (32,766 parameters and 500 removed rows per statement), all inside that one
 transaction, so a large save is still all or nothing.
 
+On Cloudflare D1 the same split uses D1's limit of 100 bound parameters per statement, and the
+statements go out as one batch, so a large save is all or nothing there too. D1 also caps the
+statements per Worker invocation (1,000 on Paid, 50 on Free), which a very large save can exceed.
+
 ### Column types
 
 SQLite has no boolean, date, array, or object column type. The plugin maps them as follows.
