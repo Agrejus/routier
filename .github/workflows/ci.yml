@@ -113,6 +113,11 @@ jobs:
       - name: Browser check
         run: npm run test:browser
 
+      # The docs playground: every example compiles in Monaco and runs against the real plugins,
+      # including SQLite and PGlite in WebAssembly, and edits, share links and reset work.
+      - name: Playground
+        run: npm run test:browser:playground
+
       # The etag lab's server and UI: conflicts, conditional revalidation, newest-wins and the
       # optimistic adopt, driven through a real page against SQLite.
       - name: ETag lab

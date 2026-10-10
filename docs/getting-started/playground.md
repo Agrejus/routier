@@ -1,13 +1,20 @@
 ---
 title: Playground
-description: "Run Routier in your browser — schemas, CRUD, live queries, a paged data grid, React hooks and IndexedDB persistence, with no install."
+description: "Edit and run Routier in your browser — schemas, queries, live subscriptions, React, and real IndexedDB, localStorage, SQLite and PostgreSQL plugins, with no install."
 ---
 
 # Playground
 
-The Routier playground runs real examples in your browser: schemas, queries, live
-subscriptions, a paged live data grid, React, and IndexedDB persistence. There's nothing to install and no account to
-create, and the code on screen is the exact file that runs.
+The Routier playground is an editor and runtime in your browser. Every example is editable TypeScript,
+with autocomplete and type checking for Routier's API. Press **Run** (or Ctrl/⌘ + Enter) and it compiles
+and runs right on the page against the real plugins: memory, localStorage, IndexedDB, and SQLite and
+PostgreSQL compiled to WebAssembly. There's nothing to install and no account to create.
+
+- **Edit anything.** Your changes are kept per example; **Reset** brings back the original.
+- **Write your own.** Start from **Sandbox**, or import any plugin: `@routier/sqlite-plugin`,
+  `@routier/pglite-plugin`, `@routier/dexie-plugin`, `@routier/browser-storage-plugin`.
+- **Scripts or components.** Export `run(log)` to log results, or export a React component to render it.
+- **Share it.** **Share** copies a link with your code in it.
 
 <p>
   <a class="playground-button" href="/playground/" target="_self">Open the Playground →</a>
@@ -62,6 +69,30 @@ Add a note, reload the page, and it's still there.
 <a href="/playground/#persistence" target="_self">Try it →</a>
 
 <<< @/../examples/playground/src/examples/PersistentNotes.tsx
+
+### localStorage
+
+A store kept in `localStorage` with the [browser storage plugin](/integrations/plugins/built-in-plugins/local-storage/README).
+Run it, reload the page, and run it again.
+<a href="/playground/#local-storage" target="_self">Try it →</a>
+
+<<< @/../examples/playground/src/examples/localStorage.ts
+
+### SQLite (WASM)
+
+Real SQLite compiled to WebAssembly, through the [SQLite plugin](/integrations/plugins/built-in-plugins/sqlite/README).
+Open the devtools **Queries** tab to see the SQL each query ran.
+<a href="/playground/#sqlite" target="_self">Try it →</a>
+
+<<< @/../examples/playground/src/examples/sqliteQueries.ts
+
+### PostgreSQL (PGlite)
+
+Real PostgreSQL compiled to WebAssembly, through the [PGlite plugin](/integrations/plugins/built-in-plugins/pglite/README).
+The first run downloads it, so give it a few seconds.
+<a href="/playground/#pglite" target="_self">Try it →</a>
+
+<<< @/../examples/playground/src/examples/pgliteQueries.ts
 
 ## Run it locally
 
