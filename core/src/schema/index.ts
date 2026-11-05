@@ -11,3 +11,5 @@ export * from './utils/standardJsonSchema';
 export * from './utils/propertyKind';
 export * from './utils/storageDates';
 export * from './SchemaDefinition';
+export { registerGeneratedFunctions } from './generatedFunctions';
+export type { EmittedFunction, FunctionRecorder, GeneratedFunctions } from './generatedFunctions';

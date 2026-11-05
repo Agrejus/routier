@@ -1,0 +1,43 @@
+{
+    "name": "@routier/cli",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Command line tools for routier",
+    "bin": {
+        "routier": "./bin/routier.mjs"
+    },
+    "files": [
+        "bin/**/*",
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "engines": {
+        "node": ">=22"
+    },
+    "scripts": {
+        "build": "node ../tooling/scripts/clean-dist.mjs && rspack build",
+        "tsc": "tsc --noEmit",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "cli"
+    },
+    "peerDependencies": {
+        "@routier/core": ">=0.9.3"
+    },
+    "dependencies": {
+        "tsx": "4.23.1"
+    },
+    "devDependencies": {
+        "@routier/core": "^0.9.3",
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8",
+        "typescript": "^5.7.2"
+    }
+}

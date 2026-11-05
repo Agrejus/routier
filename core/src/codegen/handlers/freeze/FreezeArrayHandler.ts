@@ -11,7 +11,7 @@ export class FreezeArrayHandler extends PropertyInfoHandler {
             const childSelectorPath = property.getSelectrorPath({ parent: "entity" });
             const childAssignmentPath = property.getAssignmentPath({ parent: "entity" });
 
-            assignmentSlot.if(`${childSelectorPath} != null`).unshiftBody(`${childAssignmentPath} = Object.freeze(${childAssignmentPath});`);
+            assignmentSlot.if(`${childSelectorPath} != null`).unshiftBody(`Object.freeze(${childAssignmentPath});`);
             return builder;
         }
 

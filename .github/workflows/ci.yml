@@ -118,6 +118,10 @@ jobs:
       - name: Playground
         run: npm run test:browser:playground
 
+      # routier generate, then a minified app under a real CSP header with no unsafe-eval.
+      - name: CSP without unsafe-eval
+        run: npm run test:browser:csp
+
       # The etag lab's server and UI: conflicts, conditional revalidation, newest-wins and the
       # optimistic adopt, driven through a real page against SQLite.
       - name: ETag lab

@@ -6,6 +6,7 @@
     "workspaces": [
         "tooling/architecture",
         "core",
+        "cli",
         "datastore",
         "plugins/*",
         "tooling/test-utils",
@@ -35,6 +36,7 @@
         "oxfmt": "oxfmt . --check",
         "mutate:expressions": "stryker run tooling/stryker/expressions.mjs",
         "mutate:codegen": "stryker run tooling/stryker/codegen.mjs",
+        "mutate:cli": "stryker run tooling/stryker/cli.mjs",
         "mutate:plugins": "stryker run tooling/stryker/plugins.mjs",
         "mutate:otel": "stryker run tooling/stryker/otel.mjs",
         "mutate:replication": "stryker run tooling/stryker/replication.mjs",
@@ -62,6 +64,7 @@
         "release:consumer-check": "node tooling/scripts/consumer-check.mjs",
         "test:browser": "node tooling/e2e/browser/run.mjs",
         "test:browser:playground": "node tooling/e2e/browser/playground/run.mjs",
+        "test:browser:csp": "node tooling/e2e/browser/csp/run.mjs",
         "test:etag-lab": "npm test --prefix examples/etag-lab && npm run test:ui --prefix examples/etag-lab"
     },
     "author": "",
