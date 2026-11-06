@@ -28,13 +28,13 @@
         "directory": "cli"
     },
     "peerDependencies": {
-        "@routier/core": ">=0.9.3"
+        "@routier/core": ">=0.9.4"
     },
     "dependencies": {
         "tsx": "4.23.1"
     },
     "devDependencies": {
-        "@routier/core": "^0.9.3",
+        "@routier/core": "^0.9.4",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "typescript": "^5.7.2"

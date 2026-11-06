@@ -3,6 +3,28 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Schemas without unsafe-eval (2026-11-06)
+
+A patch to `@routier/core` and the first release of `@routier/cli`. `@routier/core` floors move
+to `>=0.9.4` in the repository. No other package is released, and each keeps its published range.
+
+### Added — @routier/core 0.9.4
+
+- `registerGeneratedFunctions` takes the functions that `routier generate` writes. When they are
+  registered, `.compile()` uses them in place of `new Function`, so an app runs under a
+  Content-Security-Policy without `unsafe-eval`. Schema files do not change, and `InferType`
+  works as before (#131).
+- When eval is blocked and a schema has no generated function, `.compile()` throws an error that
+  names the schema and the fix, in place of the browser's `EvalError`.
+- Generated functions run in strict mode.
+
+### Added — @routier/cli 0.1.0
+
+- First release. `npx @routier/cli generate` scans `src` for schemas that call `.compile()`, and
+  writes `routier.generated.js`. Import that file before your schemas. Requires Node 22 and
+  `@routier/core` 0.9.4 or later. The guide is at
+  https://routier.dev/concepts/schema/generating-schemas (#131).
+
 ## Long value lists on Cloudflare D1 (2026-10-09)
 
 Patches to `@routier/sql-plugin-core` and `@routier/sqlite-plugin`. `@routier/sql-plugin-core`
