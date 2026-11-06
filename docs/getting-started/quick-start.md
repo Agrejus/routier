@@ -33,6 +33,10 @@ prop, an API payload — get it from the schema with `InferType<typeof userSchem
 writing an interface by hand, which then has to be kept in step with the schema. See
 [InferType](/concepts/schema/infer-type).
 
+::: tip Generate your schemas with the CLI
+You can run `npx @routier/cli generate` to build your schema functions ahead of time. Then your app does not need `unsafe-eval` in its Content-Security-Policy. [Generating Schemas](/concepts/schema/generating-schemas)
+:::
+
 ## What's Next?
 
 - **[Learn About Schemas](/concepts/schema/)** - Define your data structure

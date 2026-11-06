@@ -24,7 +24,7 @@ You need it when your app sends a CSP header and the `script-src` list has no `u
 Content-Security-Policy: script-src 'self'
 ```
 
-Without that policy, you do not need the CLI. `.compile()` works the same either way.
+Without that policy, the CLI is optional. `.compile()` works the same either way.
 
 ## Generate the file
 

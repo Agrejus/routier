@@ -23,4 +23,5 @@ This guide shows a complete working example of using Routier for a simple user m
 
 - [Configuration](/tutorials/configuration) - Advanced configuration options
 - [Schema Guide](/concepts/schema/creating-a-schema) - Detailed schema creation
+- [Generating Schemas](/concepts/schema/generating-schemas) - Build schema functions ahead of time with the CLI
 - [Query Guide](/concepts/queries/) - Advanced querying techniques

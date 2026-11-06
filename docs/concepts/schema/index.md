@@ -118,6 +118,7 @@ This keeps **collection-level configuration** colocated with the schema and stro
 ### Getting Started
 
 - **[Creating A Schema](/concepts/schema/creating-a-schema)** - Learn how to create your first schema
+- **[Generating Schemas](/concepts/schema/generating-schemas)** - Build schema functions ahead of time with the CLI
 
 ### Core Concepts
 
@@ -180,6 +181,10 @@ Schemas are compiled into optimized JavaScript functions that eliminate runtime 
 
 
 <<< @/_snippets/code/from-docs/concepts/schema/memory-efficiency-example.ts
+
+::: tip Generate your schemas with the CLI
+`.compile()` builds these functions with `new Function`. Run `npx @routier/cli generate` to build them ahead of time instead, so your app works under a strict Content-Security-Policy. [Generating Schemas](/concepts/schema/generating-schemas)
+:::
 
 ## Next Steps
 
