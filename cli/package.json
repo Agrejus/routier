@@ -1,7 +1,6 @@
 {
     "name": "@routier/cli",
     "version": "0.1.0",
-    "private": true,
     "type": "module",
     "description": "Command line tools for routier",
     "bin": {

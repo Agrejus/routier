@@ -69,8 +69,11 @@ src/routier.generated.js                    not found -----> new Function
 
 ### Phase 4: publish
 
-- [ ] Remove `private`, then add the package to `pack-check` and `release-packages`
-- [ ] Add a docs page and a CSP guide
+- [x] Remove `private`, then add the package to `pack-check` and `release-packages`
+- [x] Add a docs page: `docs/concepts/schema/generating-schemas.md`
+- [x] Run it as `npx @routier/cli generate`. The npm name `routier` belongs to another tool.
+- [ ] Release a core version with `registerGeneratedFunctions`, and raise the CLI's `@routier/core` peer range to it
+- [ ] Publish `@routier/cli`
 
 ### Later
 

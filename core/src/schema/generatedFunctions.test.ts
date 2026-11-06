@@ -224,7 +224,7 @@ describe('compile with generated functions', () => {
 
         const schema = definition().compile();
 
-        expect(() => schema.cloneStorage({ id: 'a', lazyClone: 'b' })).toThrow('routier generate');
+        expect(() => schema.cloneStorage({ id: 'a', lazyClone: 'b' })).toThrow('npx @routier/cli generate');
     });
 });
 
@@ -270,14 +270,14 @@ describe('compile without generated functions', () => {
         blockEval();
 
         expect(() => s.define('unregistered', { id: s.string().key(), blocked: s.string() }).compile())
-            .toThrow(`The schema 'unregistered' has no generated function. Run "routier generate", and import the generated file before your schemas.`);
+            .toThrow(`The schema 'unregistered' has no generated function. Run "npx @routier/cli generate", and import the generated file before your schemas.`);
     });
 
     it('treats a changed schema as missing', () => {
         blockEval();
 
         expect(() => s.define('things', { id: s.string().key().identity(), renamed: s.string() }).compile())
-            .toThrow('routier generate');
+            .toThrow('npx @routier/cli generate');
     });
 
     it('keeps other errors as they are', () => {

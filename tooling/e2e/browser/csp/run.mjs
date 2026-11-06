@@ -181,7 +181,7 @@ const main = async () => {
 
             check(`${label}: the app stops`, page.result == null, JSON.stringify(page.result)?.slice(0, 100));
             check(`${label}: the error names the schema`, message.includes("The schema 'todos' has no generated function."), message.slice(0, 160));
-            check(`${label}: the error names the fix`, message.includes('Run "routier generate", and import the generated file before your schemas.'));
+            check(`${label}: the error names the fix`, message.includes('Run "npx @routier/cli generate", and import the generated file before your schemas.'));
         }
     } finally {
         await browser.close();

@@ -50,7 +50,7 @@ const evaluateMissing = (collectionName: string, parameters: readonly string[], 
         if (error instanceof EvalError) {
             throw new Error(
                 `The schema '${collectionName}' has no generated function. ` +
-                'Run "routier generate", and import the generated file before your schemas.'
+                'Run "npx @routier/cli generate", and import the generated file before your schemas.'
             );
         }
 
