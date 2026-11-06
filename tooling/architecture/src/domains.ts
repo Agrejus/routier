@@ -178,6 +178,18 @@ export const DOMAINS: readonly Domain[] = [
     // ---------------------------------------------------------------- the abstraction
 
     {
+        id: "cli",
+        title: "Command line tools",
+        paths: ["cli/src"],
+        responsibility:
+            "The routier command. Loads a project's schema definitions and writes their generated functions to files, so an app can use them without unsafe-eval.",
+        rules: [
+            "Core owns what the generated source says. The CLI records what the project's own core builds, so the output always matches the core version the project installs.",
+            "Record through the global recorder, not an import of core. The CLI and the project can each load their own copy of core.",
+        ],
+        mayImport: ["@routier/core"],
+    },
+    {
         id: "datastore",
         title: "Datastore — the CRUD abstraction",
         paths: ["datastore/src"],

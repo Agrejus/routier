@@ -195,6 +195,10 @@
             "link": "/concepts/schema/infer-type"
           },
           {
+            "text": "Generating Schemas",
+            "link": "/concepts/schema/generating-schemas"
+          },
+          {
             "text": "Why Schemas?",
             "link": "/concepts/schema/why-schemas"
           }

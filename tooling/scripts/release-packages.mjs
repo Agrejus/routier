@@ -5,6 +5,7 @@ import fs from 'node:fs';
 // PGlite plugins have one on postgres-core.
 export const releasePackageDirectories = [
   'core',
+  'cli',
   'plugins/memory',
   'plugins/sql-core',
   'plugins/postgres-core',

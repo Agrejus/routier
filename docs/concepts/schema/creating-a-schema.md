@@ -77,6 +77,8 @@ Always call `.compile()` at the end to create the final schema:
 
 <<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/compiling-schemas.ts
 
+`.compile()` uses `new Function`. If your app runs under a Content-Security-Policy without `unsafe-eval`, see [Generating Schemas](/concepts/schema/generating-schemas).
+
 ## Getting The Type Out
 
 A compiled schema already describes the shape of your data, so you never write that shape a

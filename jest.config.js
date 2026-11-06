@@ -93,6 +93,11 @@ module.exports = {
         },
         {
             ...base,
+            displayName: 'cli',
+            testMatch: ['<rootDir>/cli/**/*.test.ts'],
+        },
+        {
+            ...base,
             displayName: 'playground',
             testMatch: ['<rootDir>/examples/playground/src/**/*.test.ts'],
         },

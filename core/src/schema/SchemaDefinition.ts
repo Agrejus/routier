@@ -28,6 +28,7 @@ import { SetHandlerBuilder } from '../codegen/handlers';
 import { createChangeTracker } from './changeTracker';
 import { findEtagProperty } from './utils/etagProperty';
 import { hasNestedElements, isArrayValued } from './utils/propertyKind';
+import { createFunctionSource, FunctionSource } from './generatedFunctions';
 
 function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
     if (result == null) {
@@ -40,10 +41,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     instance: T;
     type = SchemaTypes.Definition;
     collectionName: CollectionName;
+    private _functionSource: FunctionSource;
 
     constructor(collectionName: CollectionName, schema: T) {
         super();
         this.collectionName = collectionName;
+        this._functionSource = createFunctionSource(collectionName);
         this.instance = schema;
         this.isNullable = false;
         this.isOptional = false;
@@ -87,7 +90,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
         const body = builder.toString();
         try {
-            return Function(`return ${body}`) as TResult;
+            return this._functionSource.compile([], `return ${body}`) as TResult;
         } catch (e) {
             logger.error(`Error compiling schema function.  Function Body: ${body}`)
             throw e;
@@ -108,10 +111,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
         try {
             if (bindings.length === 0) {
-                return Function(...fnArgs, body) as TResult;
+                return this._functionSource.compile(fnArgs, body) as TResult;
             }
 
-            const outer = Function(...bindings.map(w => w.name), `return function(${fnArgs.join(", ")}) {\n${body}\n}`);
+            const outer = this._functionSource.compile(bindings.map(w => w.name), `return function(${fnArgs.join(", ")}) {\n${body}\n}`);
 
             return outer(...bindings.map(w => w.value)) as TResult;
         } catch (e) {
@@ -671,7 +674,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
              * nothing. After the first call it is the same generated function as `clone`.
              */
             let storageCloneFunction: ((entity: InferType<T>) => InferType<T>) | null = null;
-            const cloneStorageFunction = (entity: InferType<T>): InferType<T> => {
+            const ensureStorageClone = (): (entity: InferType<T>) => InferType<T> => {
 
                 if (storageCloneFunction == null) {
                     const storageCloneCodeBuilder = new CodeBuilder();
@@ -724,8 +727,14 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     storageCloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(storageCloneCodeBuilder, "entity");
                 }
 
-                return storageCloneFunction(entity);
+                return storageCloneFunction;
             };
+
+            if (this._functionSource.eager) {
+                ensureStorageClone();
+            }
+
+            const cloneStorageFunction = (entity: InferType<T>): InferType<T> => ensureStorageClone()(entity);
             const deserializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(deserializeCodeBuilder, "unserialized");
             const serializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(serializeCodeBuilder, "entity");
             const compareFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareCodeBuilder, "a", "b");
