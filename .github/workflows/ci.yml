@@ -62,6 +62,12 @@ jobs:
       - name: Consumer check
         run: npm run release:consumer-check
 
+      - name: Install Chromium
+        run: npm install --no-save playwright && npx playwright install --with-deps chromium
+
+      - name: CSP without unsafe-eval
+        run: npm run test:browser:csp
+
   # Containers are slow and need Docker, so they run on the default branch, on release
   # branches, and on demand — not on every pull request. Ubuntu runners have Docker, so
   # testcontainers needs no setup.
@@ -117,10 +123,6 @@ jobs:
       # including SQLite and PGlite in WebAssembly, and edits, share links and reset work.
       - name: Playground
         run: npm run test:browser:playground
-
-      # routier generate, then a minified app under a real CSP header with no unsafe-eval.
-      - name: CSP without unsafe-eval
-        run: npm run test:browser:csp
 
       # The etag lab's server and UI: conflicts, conditional revalidation, newest-wins and the
       # optimistic adopt, driven through a real page against SQLite.
