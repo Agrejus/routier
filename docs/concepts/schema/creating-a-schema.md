@@ -77,7 +77,9 @@ Always call `.compile()` at the end to create the final schema:
 
 <<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/compiling-schemas.ts
 
-`.compile()` uses `new Function`. If your app runs under a Content-Security-Policy without `unsafe-eval`, see [Generating Schemas](/concepts/schema/generating-schemas).
+::: tip Generate your schemas with the CLI
+`.compile()` uses `new Function`. Run `npx @routier/cli generate` to build these functions ahead of time, so your app works under a strict Content-Security-Policy. [Generating Schemas](/concepts/schema/generating-schemas)
+:::
 
 ## Getting The Type Out
 

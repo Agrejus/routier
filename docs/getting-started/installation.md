@@ -33,6 +33,10 @@ Other plugins are available (Local Storage, File System, Dexie, SQLite, PouchDB)
 
 - [Built‑in Plugins](/integrations/plugins/built-in-plugins/)
 
+::: tip Generate your schemas with the CLI
+We recommend running `npx @routier/cli generate` in your project. It builds your schema functions ahead of time, so your app works under a strict Content-Security-Policy. [Generating Schemas](/concepts/schema/generating-schemas)
+:::
+
 ## Next Steps
 
 - [Quick Start](/getting-started/quick-start) - Build a working example in minutes
