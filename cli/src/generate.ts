@@ -2,12 +2,13 @@ import { glob, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { FunctionRecorder } from "@routier/core";
 import type { GenerateOptions } from "./args";
+import { findRoutierPackages, resolvePackage } from "./packages";
 import { OUTPUT_FILE, renderOutput } from "./render";
 
 export type ModuleLoader = (file: string) => Promise<void>;
 
 export type GenerateResult =
-    | { readonly ok: true; readonly schemas: readonly string[]; readonly file: string }
+    | { readonly ok: true; readonly schemas: readonly string[]; readonly file: string; readonly skipped: readonly string[] }
     | { readonly ok: false; readonly problems: readonly string[] };
 
 const RECORDER_GLOBAL = "__routierFunctionRecorder";
@@ -53,30 +54,52 @@ const findFiles = async (patterns: readonly string[], cwd: string, output: strin
     return scripts.filter((_, index) => targets[index]);
 };
 
-const loadFile = async (file: string, load: ModuleLoader): Promise<string[]> => {
+const failureOf = async (run: () => Promise<void>): Promise<string | null> => {
     try {
-        await load(file);
+        await run();
 
-        return [];
+        return null;
     } catch (error) {
-        return [`${file}: could not load the file: ${messageOf(error instanceof Error ? error : String(error))}`];
+        return messageOf(error instanceof Error ? error : String(error));
     }
 };
 
-const recordFiles = async (files: readonly string[], load: ModuleLoader, recorder: FunctionRecorder): Promise<string[]> => {
+const loadPackages = async (cwd: string, load: ModuleLoader): Promise<string[]> => {
+    const skipped: string[] = [];
+
+    for (const name of await findRoutierPackages(cwd)) {
+        const failure = await failureOf(() => load(resolvePackage(name, cwd)));
+
+        if (failure != null) {
+            skipped.push(`${name}: could not load it in Node: ${failure}`);
+        }
+    }
+
+    return skipped;
+};
+
+const loadFiles = async (files: readonly string[], load: ModuleLoader): Promise<string[]> => {
     const problems: string[] = [];
 
-    Reflect.set(globalThis, RECORDER_GLOBAL, recorder);
+    for (const file of files) {
+        const failure = await failureOf(() => load(file));
 
-    try {
-        for (const file of files) {
-            problems.push(...await loadFile(file, load));
+        if (failure != null) {
+            problems.push(`${file}: could not load the file: ${failure}`);
         }
-    } finally {
-        Reflect.deleteProperty(globalThis, RECORDER_GLOBAL);
     }
 
     return problems;
+};
+
+const record = async <T>(recorder: FunctionRecorder, run: () => Promise<T>): Promise<T> => {
+    Reflect.set(globalThis, RECORDER_GLOBAL, recorder);
+
+    try {
+        return await run();
+    } finally {
+        Reflect.deleteProperty(globalThis, RECORDER_GLOBAL);
+    }
 };
 
 export const generate = async (options: GenerateOptions, cwd: string, load: ModuleLoader): Promise<GenerateResult> => {
@@ -84,7 +107,10 @@ export const generate = async (options: GenerateOptions, cwd: string, load: Modu
     const output = join(out, OUTPUT_FILE);
     const files = await findFiles(options.patterns, cwd, output);
     const recorder: FunctionRecorder = { functions: new Map(), collections: new Set() };
-    const problems = await recordFiles(files, load, recorder);
+    const { skipped, problems } = await record(recorder, async () => ({
+        skipped: await loadPackages(cwd, load),
+        problems: await loadFiles(files, load),
+    }));
 
     if (problems.length > 0) {
         return { ok: false, problems };
@@ -100,5 +126,5 @@ export const generate = async (options: GenerateOptions, cwd: string, load: Modu
         await writeFile(join(out, name), content);
     }
 
-    return { ok: true, schemas: [...recorder.collections].sort(), file: output };
+    return { ok: true, schemas: [...recorder.collections].sort(), file: output, skipped };
 };

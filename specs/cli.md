@@ -63,8 +63,8 @@ src/routier.generated.js                    not found -----> new Function
 
 ### Phase 3: the whole library without eval
 
-- [ ] Replication: `UnsyncedQueue.ts` and `conditionalRevalidation.ts` compile at import
-- [ ] Full text search: `fullTextSearch.ts` compiles an index schema at run time
+- [x] Replication: `UnsyncedQueue.ts` and `conditionalRevalidation.ts` compile at import. `generate` loads every installed `@routier/*` package, so they are recorded (#134)
+- [x] Full text search: `fullTextSearch.ts` compiles one sample index schema when it loads during a recording (`isRecordingFunctions()`). Index schemas differ only by name, and the name is not in the functions, so one sample covers every collection (#135)
 - [ ] Add the other storage plugins to the CSP test. Memory and Dexie are covered.
 
 ### Phase 4: publish

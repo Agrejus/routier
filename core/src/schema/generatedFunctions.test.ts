@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals';
-import { registerGeneratedFunctions, s } from './index';
+import { isRecordingFunctions, registerGeneratedFunctions, s } from './index';
 import { createFunctionSource } from './generatedFunctions';
 import type { EmittedFunction, FunctionRecorder, GeneratedFunctions } from './generatedFunctions';
 
@@ -166,6 +166,17 @@ describe('recording', () => {
         });
 
         expect(recorder.functions.size).toBe(2);
+    });
+
+    it('says when it is recording', () => {
+        let during = false;
+
+        record(() => {
+            during = isRecordingFunctions();
+        });
+
+        expect(during).toBe(true);
+        expect(isRecordingFunctions()).toBe(false);
     });
 
     it('runs what it records, without generated functions', () => {
