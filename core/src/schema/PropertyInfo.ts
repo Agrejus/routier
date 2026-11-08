@@ -1,6 +1,5 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
-import { SchemaArray } from './property/types/SchemaArray';
 import { DefaultValue, EtagComparator, EtagValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
 /**
@@ -112,9 +111,7 @@ export class PropertyInfo<T extends {}> {
         // one having to remember to check.
         this.isSearchable = schema.isSearchable && schema.type === SchemaTypes.String;
 
-        if (schema instanceof SchemaArray) {
-            this.innerSchema = schema.innerSchema;
-        }
+        this.innerSchema = schema.innerSchema;
 
         this.isNullable = schema.isNullable;
         this.isOptional = schema.isOptional;

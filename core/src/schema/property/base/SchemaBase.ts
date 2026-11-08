@@ -30,11 +30,9 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
      * exactly this reason — the copy constructor below carries it — and a dimension count has
      * to travel with it, or an optional vector reaches a backend as a vector of unknown width
      * and cannot be given a column.
-     *
-     * `innerSchema` is the cautionary example: it lives on `SchemaArray` alone, so a modified
-     * array arrives with no element type and clones through the slow path.
      */
     dimensions: number | null = null;
+    innerSchema?: SchemaBase<unknown, SchemaModifiers>;
     /**
      * The longest string the property is declared to hold. `null` for every other type, and
      * for a string that declares nothing.
@@ -93,6 +91,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.tags = entity.tags;
             this.transform = entity.transform;
             this.dimensions = entity.dimensions;
+            this.innerSchema = entity.innerSchema;
             this.maxLength = entity.maxLength;
             this.isSearchable = entity.isSearchable;
             this.isDistinct = entity.isDistinct;
