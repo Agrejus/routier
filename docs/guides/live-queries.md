@@ -14,6 +14,7 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 
 - [Quick Reference](#quick-reference)
 - [Important: Callbacks vs Async](#important-callbacks-vs-async)
+- [When a Live Query Updates](#when-a-live-query-updates)
 - [Basic Live Queries](#basic-live-queries)
   - [Simple Live Query](#simple-live-query)
   - [Live Query with Filtering](#live-query-with-filtering)
@@ -45,6 +46,16 @@ When using `.subscribe()`, you **must use callback-based methods** (not async me
 
 
 The reason: subscriptions need to trigger the callback whenever data changes, which can't be done with promises. Callbacks can be invoked at any time, making them perfect for reactive updates.
+
+## When a Live Query Updates
+
+A live query updates shortly **after** `saveChangesAsync()` resolves, not before.
+
+1. The save writes the rows and resolves.
+2. Routier sends the change over a `BroadcastChannel`, which delivers it on a later task. This is true in the same tab too.
+3. Each live query runs its query again and calls your callback with the new result.
+
+So the line after `await saveChangesAsync()` still sees the last result the callback received. A query you run yourself after the save, such as `toArrayAsync()`, already returns the saved rows.
 
 ## Basic Live Queries
 
