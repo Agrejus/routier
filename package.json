@@ -38,6 +38,7 @@
         "mutate:codegen": "stryker run tooling/stryker/codegen.mjs",
         "mutate:cli": "stryker run tooling/stryker/cli.mjs",
         "mutate:plugins": "stryker run tooling/stryker/plugins.mjs",
+        "mutate:memory": "stryker run tooling/stryker/memory.mjs",
         "mutate:otel": "stryker run tooling/stryker/otel.mjs",
         "mutate:replication": "stryker run tooling/stryker/replication.mjs",
         "mutate:collections": "stryker run tooling/stryker/collections.mjs",
