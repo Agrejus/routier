@@ -1,10 +1,8 @@
-import { MemoryDatabase } from ".";
 import { DbPluginEvent, EphemeralDataPlugin } from "@routier/core/plugins";
 import { CompiledSchema } from "@routier/core/schema";
 import { PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
 import { MemoryDataCollection } from "@routier/core/collections";
-
-const dbs: Record<string, MemoryDatabase> = {};
+import { closeDatabase, openDatabase } from "./databases";
 
 export class MemoryPlugin extends EphemeralDataPlugin {
 
@@ -17,9 +15,7 @@ export class MemoryPlugin extends EphemeralDataPlugin {
     constructor(databaseName?: string) {
         super(databaseName ?? "__routier-memory-plugin-db__");
 
-        if (dbs[this.databaseName] == null) {
-            dbs[this.databaseName] = {}
-        }
+        openDatabase(this.databaseName);
     }
 
     get size() {
@@ -33,16 +29,15 @@ export class MemoryPlugin extends EphemeralDataPlugin {
     }
 
     private get database() {
-        return dbs[this.databaseName];
+        return openDatabase(this.databaseName);
     }
 
     protected override resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+        const database = this.database;
 
-        if (dbs[this.databaseName][schema.collectionName] == null) {
-            dbs[this.databaseName][schema.collectionName] = new MemoryDataCollection(schema);
-        }
+        database[schema.collectionName] ??= new MemoryDataCollection(schema);
 
-        return dbs[this.databaseName][schema.collectionName];
+        return database[schema.collectionName];
     }
 
     getCollectionSize(collectionName: string) {
@@ -70,7 +65,7 @@ export class MemoryPlugin extends EphemeralDataPlugin {
      * Give each test its own database name if they run in one process.
      */
     override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-        dbs[this.databaseName] = {};
+        closeDatabase(this.databaseName);
         done(PluginEventResult.success(event.id));
     }
 }
