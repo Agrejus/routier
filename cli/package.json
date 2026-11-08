@@ -1,6 +1,6 @@
 {
     "name": "@routier/cli",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "type": "module",
     "description": "Command line tools for routier",
     "bin": {
@@ -28,13 +28,13 @@
         "directory": "cli"
     },
     "peerDependencies": {
-        "@routier/core": ">=0.9.4"
+        "@routier/core": ">=0.9.5"
     },
     "dependencies": {
         "tsx": "4.23.1"
     },
     "devDependencies": {
-        "@routier/core": "^0.9.4",
+        "@routier/core": "^0.9.5",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "typescript": "^5.7.2"

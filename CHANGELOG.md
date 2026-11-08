@@ -3,6 +3,45 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Optional arrays, generated package schemas and memory cleanup (2026-11-08)
+
+Patches to `@routier/core`, `@routier/memory-plugin`, `@routier/datastore` and `@routier/cli`.
+`@routier/core` floors move to `>=0.9.5` and `@routier/memory-plugin` references to `^0.4.1` in
+the repository. No other package is released, and each keeps its published range.
+
+Run `npx @routier/cli generate` again after upgrading. The generated functions change for
+optional and nullable arrays.
+
+### Fixed — @routier/core 0.9.5
+
+- An array keeps its item schema (`innerSchema`) when `.optional()`, `.nullable()` or any other
+  modifier wraps it. Code that walks the definition now sees the items. For an optional or
+  nullable array, date items are now stored as ISO strings and read back as dates, like a
+  required array, and a change inside an item is now tracked (#136, #138).
+- `isRecordingFunctions()` tells a package that `routier generate` is recording (#139).
+
+### Fixed — @routier/datastore 0.4.7
+
+- `routier generate` now records the search index schema behind `.fullTextSearch()`, so a store
+  with full-text search opens with eval blocked (#135, #139). Requires `@routier/core` 0.9.5.
+
+### Fixed — @routier/memory-plugin 0.4.1
+
+- `destroy` removes the database name from the registry, rather than leaving an empty entry for
+  each destroyed database (#128, #137).
+
+### Fixed — @routier/cli 0.1.1
+
+- `generate` also loads each installed `@routier/*` package, so the schemas Routier compiles for
+  you are in the generated file. These include the replication plugin's queue and the
+  full-text search index. A package that cannot load in Node is skipped, with the reason
+  (#134, #135, #139).
+
+### Docs
+
+- The live queries guide says when a live query updates: shortly after `saveChangesAsync()`
+  resolves (#129, #140).
+
 ## Schemas without unsafe-eval (2026-11-06)
 
 A patch to `@routier/core` and the first release of `@routier/cli`. `@routier/core` floors move
