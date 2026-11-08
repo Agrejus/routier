@@ -1,7 +1,6 @@
-import { MemoryDataCollection } from '@routier/core/collections';
 import { MemoryPlugin } from './MemoryPlugin';
 
-export type MemoryDatabase = Record<string, MemoryDataCollection>;
+export type { MemoryDatabase } from './databases';
 
 export const assertIsMemoryPlugin = (value: unknown): asserts value is MemoryPlugin => {
     if (value instanceof MemoryPlugin) {

@@ -27,6 +27,10 @@ const run = async (): Promise<number> => {
         return 1;
     }
 
+    for (const message of result.skipped) {
+        console.warn(`Skipped ${message}`);
+    }
+
     console.log(`Generated ${result.schemas.join(", ")} in ${result.file}`);
     console.log("Import this file before your schemas, as the first import in your app.");
     return 0;

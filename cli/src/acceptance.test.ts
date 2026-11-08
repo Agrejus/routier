@@ -34,6 +34,14 @@ const hidden = s.define("hidden", { id: s.string().key() }).compile();
 export const hiddenId = (id: string) => hidden.getId({ id });
 `;
 
+const PLUGIN = `
+import { s } from "@routier/core";
+
+const queue = s.define("plugin_queue", { id: s.string().key(), label: s.string() }).compile();
+
+export const queued = (id) => queue.clone({ id, label: "queued" });
+`;
+
 const useSchema = (imports: string) => `
 ${imports}
 const entity = things.enrich({ id: "a", name: "x", nested: { a: "one" }, tags: ["t"] }, "diff");
@@ -88,10 +96,21 @@ const installCore = () => {
     writeFileSync(join(folder, 'package.json'), JSON.stringify({ name: '@routier/core', type: 'module', main: './index.js' }));
 };
 
+const installPackage = (name: string, source: string) => {
+    const folder = join(cwd, 'node_modules/@routier', name);
+
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, 'index.js'), source);
+    writeFileSync(join(folder, 'package.json'), JSON.stringify({ name: `@routier/${name}`, type: 'module', main: './index.js' }));
+
+    return folder;
+};
+
 beforeAll(() => {
     cwd = mkdtempSync(join(tmpdir(), 'routier-cli-acceptance-'));
     mkdirSync(join(cwd, 'src/schemas'), { recursive: true });
     installCore();
+    installPackage('fake-plugin', PLUGIN);
     writeFileSync(join(cwd, 'src/schemas/things.ts'), SCHEMA);
     writeFileSync(join(cwd, 'src/schemas/hidden.ts'), UNEXPORTED_SCHEMA);
     writeFileSync(join(cwd, 'src/schemas/things.test.ts'), 'import "@routier/core"; x.compile(); describe("never loaded", () => {});');
@@ -108,7 +127,7 @@ describe('routier generate', () => {
 
         expect(generated.stderr).toBe('');
         expect(generated.status).toBe(0);
-        expect(generated.stdout).toContain('Generated hidden, things in');
+        expect(generated.stdout).toContain('Generated hidden, plugin_queue, things in');
         expect(generated.stdout).toContain('routier.generated.js');
     }, 60000);
 
@@ -129,6 +148,31 @@ describe('routier generate', () => {
 
         expect(run.stderr).toBe('');
         expect(run.stdout.trim()).toBe('a');
+    }, 60000);
+
+    it('runs a schema an installed Routier package compiles, with eval blocked', () => {
+        const run = runBundled('plugin', `
+            ${GENERATED}
+            import { queued } from "@routier/fake-plugin";
+            console.log(JSON.stringify(queued("a")));
+        `);
+
+        expect(run.stderr).toBe('');
+        expect(JSON.parse(run.stdout)).toEqual({ id: 'a', label: 'queued' });
+    }, 60000);
+
+    it('skips an installed Routier package that cannot load in Node, and says so', () => {
+        const folder = installPackage('browser-only', 'throw new Error("indexedDB is not defined");');
+
+        try {
+            const result = runCli('generate', '--out', 'skipped-output');
+
+            expect(result.status).toBe(0);
+            expect(result.stderr).toContain('Skipped @routier/browser-only: could not load it in Node: indexedDB is not defined');
+            expect(result.stdout).toContain('Generated hidden, plugin_queue, things in');
+        } finally {
+            rmSync(folder, { recursive: true, force: true });
+        }
     }, 60000);
 
     it('names the fix when the generated file is not imported', () => {

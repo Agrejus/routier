@@ -1,4 +1,4 @@
-import { CompiledSchema, PropertyInfo, s, SchemaId, SchemaTypes } from "@routier/core/schema";
+import { CompiledSchema, isRecordingFunctions, s, SchemaId, SchemaTypes } from "@routier/core/schema";
 import { BulkPersistChanges, BulkPersistResult, SchemaPersistChanges } from "@routier/core/collections";
 import { UnknownRecord } from "@routier/core/utilities";
 import { countTerms, TokenizeOptions } from "../search/tokenize";
@@ -58,7 +58,7 @@ export type FullTextSearchRegistration = {
  * migration — the index is derived data, so a new column means bumping this schema and letting
  * the rebuild path refill an empty index.
  */
-const buildIndexSchema = (sourceSchema: CompiledSchema<any>, sourceKey: PropertyInfo<any>) => {
+const buildIndexSchema = (sourceCollectionName: string, sourceKeyType: SchemaTypes) => {
     const definition = {
         /**
          * Named `_id` rather than `key`, which two backends require and none object to.
@@ -74,7 +74,7 @@ const buildIndexSchema = (sourceSchema: CompiledSchema<any>, sourceKey: Property
         _id: s.string({ maxLength: 255 }).key(),
         term: s.string({ maxLength: 255 }).index("term"),
         field: s.string({ maxLength: 100 }),
-        sourceId: sourceKey.type === SchemaTypes.Number ? s.number() : s.string({ maxLength: 255 }),
+        sourceId: sourceKeyType === SchemaTypes.Number ? s.number() : s.string({ maxLength: 255 }),
         frequency: s.number(),
         /**
          * Which collection a row belongs to, for backends that keep every collection in ONE
@@ -98,8 +98,12 @@ const buildIndexSchema = (sourceSchema: CompiledSchema<any>, sourceKey: Property
         _rev: s.string({ maxLength: 255 }).identity(),
     };
 
-    return s.define(`${sourceSchema.collectionName}-search-index`, definition).compile();
+    return s.define(`${sourceCollectionName}-search-index`, definition).compile();
 };
+
+if (isRecordingFunctions()) {
+    buildIndexSchema("full-text", SchemaTypes.String);
+}
 
 /**
  * Validates the declaration and produces what the store needs to maintain the index.
@@ -166,7 +170,7 @@ export const resolveFullTextSearch = (
     return {
         sourceSchemaId: sourceSchema.id,
         sourceSchema,
-        indexSchema: buildIndexSchema(sourceSchema, sourceKey),
+        indexSchema: buildIndexSchema(sourceSchema.collectionName, sourceKey.type),
         fields: fields.map(field => ({ name: field.name, column: field.getResolvedName() })),
         options,
         sourceKeyColumn: sourceKey.getResolvedName(),
