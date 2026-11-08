@@ -47,6 +47,8 @@ npm install --save-dev @routier/cli
 
 With no arguments, it loads the files in `src` that use `@routier/core` and call `.compile()`. It skips test files.
 
+It also loads each installed `@routier/*` package, so the schemas Routier compiles for you are included. These include the replication plugin's queue and the index behind `.fullTextSearch()`. A package that cannot load in Node is skipped with the reason.
+
 These files run in Node, so a file that needs `window` at import fails with the reason. You can name the files instead:
 
 ```sh

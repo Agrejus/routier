@@ -3,6 +3,7 @@ import { area } from '../../stryker.base.mjs';
 export default area([
     'cli/src/args.ts',
     'cli/src/generate.ts',
+    'cli/src/packages.ts',
     'cli/src/render.ts',
 ], 90, {
     jest: {

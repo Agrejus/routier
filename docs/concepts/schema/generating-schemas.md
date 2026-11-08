@@ -94,6 +94,12 @@ The CLI runs these files in Node. A file that needs `window` or the DOM when it 
 npx @routier/cli generate "src/schemas/*.ts"
 ```
 
+The CLI also loads each installed `@routier/*` package, so the schemas Routier compiles for you are in the file too. These include the replication plugin's queue and the index behind `.fullTextSearch()`. A package that cannot load in Node is skipped, and the CLI prints the reason:
+
+```text
+Skipped @routier/example-plugin: could not load it in Node: indexedDB is not defined
+```
+
 To write the file to another folder, use `--out`:
 
 ```sh

@@ -76,6 +76,8 @@ const recordingFunctionSource = (collectionName: string, recorder: FunctionRecor
     },
 });
 
+export const isRecordingFunctions = (): boolean => globalThis.__routierFunctionRecorder != null;
+
 export const createFunctionSource = (collectionName: string): FunctionSource => {
     const recorder = globalThis.__routierFunctionRecorder;
 

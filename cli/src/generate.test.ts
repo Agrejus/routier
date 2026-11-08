@@ -57,7 +57,7 @@ describe('generate', () => {
             return Promise.resolve();
         });
 
-        expect(result).toEqual({ ok: true, schemas: ['orders', 'users'], file: join(cwd, 'gen/routier.generated.js') });
+        expect(result).toEqual({ ok: true, schemas: ['orders', 'users'], file: join(cwd, 'gen/routier.generated.js'), skipped: [] });
         expect(readdirSync(join(cwd, 'gen')).sort()).toEqual(['routier.generated.d.ts', 'routier.generated.js']);
         expect(readFileSync(join(cwd, 'gen/routier.generated.js'), 'utf8')).toContain('": function(');
     });
@@ -80,6 +80,84 @@ describe('generate', () => {
         await run(() => Promise.reject(new Error('broken')));
 
         expect(globalThis.__routierFunctionRecorder).toBeUndefined();
+    });
+});
+
+const installPackage = (name: string) => {
+    const folder = join(cwd, 'node_modules/@routier', name);
+
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, 'package.json'), JSON.stringify({ name: `@routier/${name}`, main: './main.js' }));
+    writeFileSync(join(folder, 'main.js'), '');
+
+    return join(folder, 'main.js');
+};
+
+describe('installed Routier packages', () => {
+    it('records the schemas a package compiles when it loads', async () => {
+        const entry = installPackage('fake-sync');
+        addFile('schemas/a.ts');
+
+        const result = await run(file => {
+            (file === entry ? compileOrders : compileUsers)();
+
+            return Promise.resolve();
+        });
+
+        expect(result).toEqual({ ok: true, schemas: ['orders', 'users'], file: join(cwd, 'gen/routier.generated.js'), skipped: [] });
+    });
+
+    it('loads the packages while recording', async () => {
+        const entry = installPackage('fake-store');
+        const recording: boolean[] = [];
+
+        addFile('schemas/a.ts');
+        await run(file => {
+            if (file === entry) {
+                recording.push(globalThis.__routierFunctionRecorder != null);
+            }
+
+            compileUsers();
+
+            return Promise.resolve();
+        });
+
+        expect(recording).toEqual([true]);
+    });
+
+    it('skips a package that cannot load, says why, and still writes the file', async () => {
+        const entry = installPackage('fake-browser');
+        addFile('schemas/a.ts');
+
+        const result = await run(file => {
+            if (file === entry) {
+                return Promise.reject(new Error('localStorage is not defined'));
+            }
+
+            compileUsers();
+
+            return Promise.resolve();
+        });
+
+        expect(result).toEqual({
+            ok: true,
+            schemas: ['users'],
+            file: join(cwd, 'gen/routier.generated.js'),
+            skipped: ['@routier/fake-browser: could not load it in Node: localStorage is not defined'],
+        });
+    });
+
+    it('skips a package it cannot resolve', async () => {
+        mkdirSync(join(cwd, 'node_modules/@routier/broken'), { recursive: true });
+        addFile('schemas/a.ts');
+
+        const result = await run(() => {
+            compileUsers();
+
+            return Promise.resolve();
+        });
+
+        expect(result.ok && result.skipped).toEqual([expect.stringMatching(/^@routier\/broken: could not load it in Node: .*Cannot find module '@routier\/broken'/)]);
     });
 });
 
