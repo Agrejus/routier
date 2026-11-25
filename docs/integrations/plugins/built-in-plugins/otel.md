@@ -57,6 +57,11 @@ The inner plugin runs inside the span's context, so any spans it creates itself 
 [`.explain()`](/concepts/queries/explain) — a plugin that reports nothing simply leaves the
 attribute unset.
 
+When a query filters on a [sensitive](/concepts/schema/modifiers/README#sensitive) property,
+`db.query.text` carries no values. A statement with separate parameters keeps its text, which
+holds only placeholders. A statement that carries its values inline, such as a MongoDB filter or
+an HTTP query string, is replaced by `[hidden: this query filters on a sensitive property]`.
+
 ## Failure semantics
 
 A failed or partly-applied operation records the exception and sets the span status to `ERROR`;

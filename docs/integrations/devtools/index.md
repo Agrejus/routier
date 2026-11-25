@@ -79,10 +79,10 @@ When a store is disposed or destroyed, the drawer says so and stops watching it.
 - **Rows**, in a table with a column per field, 50 to a page.
 - **A row's full value**, including nested objects and arrays. Dates, `BigInt`, `Map`, `Set`, typed arrays, and binary values are written out readably, and a value that refers to itself is shown as `[Circular]`. The open row follows its updates, and says so if it is removed.
 
-Values are shown exactly as your app reads them. A field encrypted with [`@routier/encryption`](/integrations/plugins/built-in-plugins/encryption) appears decrypted.
+Values are shown as your app reads them, except sensitive ones. A property declared [`.sensitive()`](/concepts/schema/modifiers/README#sensitive), or encrypted with [`@routier/encryption`](/integrations/plugins/built-in-plugins/encryption), shows as `••••••` in the table and in the row detail. A collection with sensitive properties has a **Show sensitive values** button that reveals them until you press **Hide sensitive values**.
 
-::: warning Sensitive values are not masked
-Devtools show every value unmasked. Masking will arrive with sensitive-field support, which devtools will use. Until then, treat the drawer like a debugger: anyone who can see your screen can see your data.
+::: warning Other values are not masked
+Every value that is not sensitive is shown as it is. Treat the drawer like a debugger: anyone who can see your screen can see your data.
 :::
 
 ### Queries
