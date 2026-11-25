@@ -1,7 +1,7 @@
-import { DataStore } from "@routier/datastore";
+import { Collection, DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { s } from "@routier/core/schema";
-import { InferCreateType, InferType } from "@routier/core/schema";
+import type { InferRoot, InferType } from "@routier/core/schema";
 
 const productSchema = s
     .define("products", {
@@ -13,47 +13,44 @@ const productSchema = s
     })
     .compile();
 
+type Product = InferType<typeof productSchema>;
+
+class ProductCollection extends Collection<InferRoot<typeof productSchema>> {
+    async restockAndUpdatePriceAsync(productId: string, newStock: number, newPrice: number): Promise<Product> {
+        const product = await this.firstOrUndefinedAsync(([p, params]) => p.id === params.productId, { productId });
+
+        if (product == null) {
+            throw new Error(`Product ${productId} not found`);
+        }
+
+        product.stock = newStock;
+        product.price = newPrice;
+
+        return product;
+    }
+
+    async findLowStockAsync(threshold: number = 10): Promise<Product[]> {
+        return this.where(([p, params]) => p.stock <= params.threshold, { threshold }).toArrayAsync();
+    }
+
+    async bulkRestockAsync(items: { productId: string; quantity: number }[]): Promise<Product[]> {
+        const restocked: Product[] = [];
+
+        for (const item of items) {
+            const product = await this.firstOrUndefinedAsync(([p, params]) => p.id === params.productId, { productId: item.productId });
+
+            if (product != null) {
+                product.stock += item.quantity;
+                restocked.push(product);
+            }
+        }
+
+        return restocked;
+    }
+}
+
 class AppDataStore extends DataStore {
-    products = this.collection(productSchema).proxy().create((Instance, ...args) => {
-        return new (class extends Instance {
-            constructor() {
-                super(...args);
-            }
-
-            // Add a method that combines multiple operations
-            async restockAndUpdatePriceAsync(productId: string, newStock: number, newPrice: number) {
-                const product = await this.firstOrUndefinedAsync((p) => p.id === productId);
-                if (!product) {
-                    throw new Error(`Product ${productId} not found`);
-                }
-
-                product.stock = newStock;
-                product.price = newPrice;
-
-                return product;
-            }
-
-            // Add a query helper with business logic
-            async findLowStockAsync(threshold: number = 10): Promise<InferType<typeof productSchema>[]> {
-                return this.where((p) => p.stock <= threshold).toArrayAsync();
-            }
-
-            // Add a bulk operation helper
-            async bulkRestockAsync(items: Array<{ productId: string; quantity: number }>) {
-                const products = await Promise.all(
-                    items.map((item) => this.firstOrUndefinedAsync((p) => p.id === item.productId))
-                );
-
-                products.forEach((product, index) => {
-                    if (product) {
-                        product.stock += items[index].quantity;
-                    }
-                });
-
-                return products.filter((p): p is InferType<typeof productSchema> => p !== undefined);
-            }
-        })();
-    });
+    products: ProductCollection = this.collection(productSchema).proxy().create((_, dependencies) => new ProductCollection(dependencies));
 
     constructor() {
         super(new MemoryPlugin("app"));
@@ -62,12 +59,13 @@ class AppDataStore extends DataStore {
 
 const ctx = new AppDataStore();
 
-// Use custom methods
 await ctx.products.restockAndUpdatePriceAsync("prod-123", 50, 29.99);
-const lowStock = await ctx.products.findLowStockAsync(20);
+await ctx.saveChangesAsync();
+
 await ctx.products.bulkRestockAsync([
     { productId: "prod-123", quantity: 10 },
     { productId: "prod-456", quantity: 5 },
 ]);
-
 await ctx.saveChangesAsync();
+
+const lowStock = await ctx.products.findLowStockAsync(20);
