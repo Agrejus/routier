@@ -15,6 +15,7 @@ export class QueryableAsync<Root extends {}, Shape, TStore = unknown, E extends 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
         this.skip = this.skip.bind(this);
+        this.cursor = this.cursor.bind(this);
         this.take = this.take.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
@@ -54,6 +55,16 @@ export class QueryableAsync<Root extends {}, Shape, TStore = unknown, E extends 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
         this.setMapQueryOption(expression);
         return this.create(QueryableAsync<Root, R, TStore, E>);
+    }
+
+    /**
+     * Continues the sorted order after `lastRow`, the last row of the previous page. Pass `null` for the first page.
+     *
+     * Write it after the sorts and before `take`. Rows that tie on every sort are ordered by the key, so no row is skipped or repeated between pages.
+     */
+    cursor(lastRow: Shape | null) {
+        this.setCursorQueryOption(lastRow);
+        return this.create(QueryableAsync<Root, Shape, TStore, E>);
     }
 
     skip(amount: number) {

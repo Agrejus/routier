@@ -181,7 +181,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
             .then(rows => {
                 // After the statement ran, not before: RetryDbPlugin re-invokes with the same
                 // event, so pushing first would report one entry per failed attempt.
-                event.executedQueries.push({ text: sql, parameters: params });
+                event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
                 // Nested objects and arrays are stored as JSON columns (see
                 // toColumnAssignments); decode them before translation so the entity gets a
@@ -248,7 +248,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
             this.connections.read(connection => this.runWithTable(connection, joinOperation, createTables))
                 .then(rows => {
-                    event.executedQueries.push({ text: sql, parameters: params });
+                    event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
                     const tuples = splitJoinRows({
                         rows: rows as UnknownRecord[],

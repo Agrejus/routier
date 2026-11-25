@@ -230,6 +230,8 @@ export type CompiledSchema<TEntity extends {}> = {
     etagProperty: PropertyInfo<TEntity> | null;
     /** All property metadata for the schema. */
     properties: PropertyInfo<TEntity>[],
+    /** The properties whose values Routier hides in logs, `.explain()`, telemetry and devtools, nested ones included. */
+    sensitiveProperties: PropertyInfo<TEntity>[],
     /** The hash type used for this schema. */
     hashType: HashType;
     /** Computes a hash for the given entity. */
@@ -312,6 +314,13 @@ export type PropertyTransform<T extends any> = {
      * `equality` only when `to` is deterministic.
      */
     comparable?: 'equality' | 'none';
+
+    /**
+     * Whether the application value must stay out of Routier's own output: logs, `.explain()`,
+     * telemetry and devtools. An encryption transform sets it, so an encrypted property is
+     * sensitive without being declared twice.
+     */
+    sensitive?: boolean;
 };
 
 export type SchemaId = Branded<number, "SchemaId">;

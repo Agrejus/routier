@@ -1,8 +1,9 @@
 import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
+import { fullReadQuery, indexedViewQuery, remoteScanQuery, temporaryViewQuery } from './explainQuery';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, type DescribedFilters, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -52,6 +53,10 @@ type MatchingIndex = {
         value: unknown
     }[]
 }
+
+
+const filtersOf = <TEntity extends {}, TShape>(event: DbPluginQueryEvent<TEntity, TShape>): DescribedFilters =>
+    describeFilters(event.operation.options.get("filter").map(item => item.option.value), "doc");
 
 export class PouchDbPlugin implements IDbPlugin {
 
@@ -1021,7 +1026,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 }
 
                 try {
-                    event.executedQueries.push({ text: `${INDEX_NAME}/${matchingIndex.viewName}: indexed view query` });
+                    event.executedQueries.push(indexedViewQuery(`${INDEX_NAME}/${matchingIndex.viewName}`, options, filtersOf(event)));
 
                     const translated = translator.translate(response.rows.map(w => w.doc));
                     d(Result.success(translated));
@@ -1050,7 +1055,7 @@ export class PouchDbPlugin implements IDbPlugin {
             }).then(response => {
 
                 try {
-                    event.executedQueries.push({ text: "allDocs({ include_docs: true }): full database scan, no index" });
+                    event.executedQueries.push(fullReadQuery());
 
                     const data = response.rows.map(w => w.doc);
                     const translated = translator.translate(data);
@@ -1076,7 +1081,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 }).then(response => {
                     const data = response.rows.map(w => w.doc);
                     try {
-                        event.executedQueries.push({ text: "allDocs({ include_docs: true }): full database scan, no index" });
+                        event.executedQueries.push(remoteScanQuery(filtersOf(event)));
 
                         const translated = translator.translate(data);
                         d(Result.success(translated));
@@ -1103,7 +1108,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 const data = response.rows.map(w => w.value);
 
                 try {
-                    event.executedQueries.push({ text: "view query" });
+                    event.executedQueries.push(temporaryViewQuery(filtersOf(event)));
 
                     const translated = translator.translate(data);
                     d(Result.success(translated));

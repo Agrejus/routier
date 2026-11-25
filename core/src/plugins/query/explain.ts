@@ -1,6 +1,7 @@
 import { Expression } from "../../expressions/types";
 import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
+import { redactExpression } from "../../expressions/redact";
 
 /**
  * One sentence per reason code, written for someone meeting pushdown for the first time.
@@ -22,13 +23,17 @@ export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string
 /**
  * One thing a backend actually executed, in the backend's own language.
  *
- * A plugin pushes these onto `DbPluginQueryEvent.executedQueries` as it runs them, so a join —
- * which reads twice — reports both, in execution order. `text` is not required to be SQL: a
- * key-value store describes what it did in whatever terms it has.
+ * A plugin pushes these onto `DbPluginQueryEvent.executedQueries` as it runs them, so a join,
+ * which reads twice, reports both in execution order. `text` is code in `language`, with each
+ * value written as `?` and listed in `parameters`. Anything that is not code, such as "full scan,
+ * no index", goes in `note`.
  */
 export type ExecutedQuery = {
     text: string;
     parameters?: unknown[];
+    /** What `text` is written in, as the plugin names it: `"sql"` or `"javascript"`, for example. */
+    language?: string;
+    note?: string;
 };
 
 export type ExplainedOption = {
@@ -138,7 +143,7 @@ const detailOf = (option: QueryOption<any, any>): Record<string, unknown> | unde
         }
 
         try {
-            return { expression: Expression.toJson(value.expression) };
+            return { expression: Expression.toJson(redactExpression(value.expression)) };
         } catch {
             // `valueToJson` rejects a value no wire can carry. Reporting the rest of the
             // explanation beats taking the diagnostic down with the query it describes.

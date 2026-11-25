@@ -9,6 +9,7 @@ import { Query } from "../query/Query";
 import { deserializeBulkPersist, serializePersistResult } from "./persist";
 import { deserializeQueryOptions, SchemaResolver, ScopeProvider } from "./query";
 import { SerializedRequest, SerializedResponse } from "./types";
+import { filtersSensitive, redactExecutedQueries } from "../query/redactQueries";
 
 /**
  * The receiving half: takes a serialized request, executes it, returns a serialized response.
@@ -265,7 +266,7 @@ export const createRequestHandler = <TContext = void>(options: RequestHandlerOpt
                             // Only when asked, and only what the plugin reported. A plugin
                             // that reported nothing sends nothing, and the caller marks the
                             // remote step as not reported.
-                            ...(request.explain === true && executedQueries.length > 0 ? { executedQueries } : {})
+                            ...(request.explain === true && executedQueries.length > 0 ? { executedQueries: redactExecutedQueries(executedQueries, filtersSensitive(queryOptions)) } : {})
                         });
                     });
                 });

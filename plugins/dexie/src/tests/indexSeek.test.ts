@@ -24,7 +24,7 @@ class SeekStore extends DataStore {
 const STATUSES = ['pending', 'paid', 'shipped'] as const;
 const ROWS = 30;
 
-const seekOn = (name: string) => `seek_orders.where("${name}").equals(?) — IndexedDB index seek`;
+const seekOn = (name: string) => `db.seek_orders.where("${name}").equals(?)`;
 
 describe('Dexie index seek', () => {
     const store = new SeekStore(new DexiePlugin(`seek-${uuidv4()}`));
@@ -59,7 +59,7 @@ describe('Dexie index seek', () => {
 
         expect(data.map(x => x.amount).sort((a, b) => a - b)).toEqual([1, 4, 7, 10, 13, 16, 19, 22, 25, 28]);
         expect(data.every(x => x.status === 'paid')).toBe(true);
-        expect(query.text).toBe(seekOn('status'));
+        expect(query.text).toBe(`${seekOn('status')}.toArray()`);
         expect(query.parameters).toEqual(['paid']);
     });
 
@@ -76,7 +76,7 @@ describe('Dexie index seek', () => {
         const [query] = executedQueriesOf(explanation);
 
         expect(data.map(x => x._id)).toEqual(all.slice(2, 5).map(x => x._id));
-        expect(query.text).toBe(`${seekOn('status')}.offset(…).limit(…)`);
+        expect(query.text).toBe(`${seekOn('status')}.offset(?).limit(?).toArray()`);
     });
 
     it('finds one row by a distinct property with a limit on the seek', async () => {
@@ -88,7 +88,7 @@ describe('Dexie index seek', () => {
         const [query] = executedQueriesOf(explanation);
 
         expect(data?.amount).toBe(7);
-        expect(query.text).toBe(`${seekOn('email')}.limit(…)`);
+        expect(query.text).toBe(`${seekOn('email')}.limit(?).toArray()`);
     });
 
     it('keeps the residual predicate over the seeked rows for a compound filter', async () => {
@@ -101,7 +101,8 @@ describe('Dexie index seek', () => {
 
         expect(data.map(x => x.amount).sort((a, b) => a - b)).toEqual([16, 19, 22, 25, 28]);
         expect(query.text).toContain(seekOn('status'));
-        expect(query.text).toContain('JavaScript predicate over the seeked rows');
+        expect(query.note).toBe('an IndexedDB index seek, then a JavaScript filter over the rows it found');
+        expect(query.language).toBe('dexie');
         expect(query.text).not.toContain('offset');
         expect(query.parameters).toEqual(['paid', 'paid', 15]);
     });
@@ -126,10 +127,15 @@ describe('Dexie index seek', () => {
             .countAsync();
 
         expect(whole.data).toBe(ROWS);
-        expect(executedQueriesOf(whole.explanation)[0].text).toBe('seek_orders.toCollection().count()');
+        expect(executedQueriesOf(whole.explanation)[0].text).toBe('db.seek_orders.toCollection().count()');
         expect(walked.data).toBe(6);
-        expect(executedQueriesOf(walked.explanation)[0].text).toContain('toCollection().filter(');
-        expect(executedQueriesOf(walked.explanation)[0].text).toContain('.count()');
+        expect(executedQueriesOf(walked.explanation)[0]).toEqual({
+            text: 'db.seek_orders.toCollection().filter(x => x.notes === ?).count()',
+            parameters: ['note 0'],
+            language: 'dexie',
+            note: 'a full table walk, no index, with a JavaScript filter',
+        });
+        expect(executedQueriesOf(whole.explanation)[0]).toStrictEqual({ text: 'db.seek_orders.toCollection().count()', language: 'dexie', note: 'a full table walk, no index' });
     });
 
     it('leaves count to the translator when a window is in the chain', async () => {
@@ -152,7 +158,7 @@ describe('Dexie index seek', () => {
             .toArrayAsync();
 
         expect(data.map(x => x.amount)).toEqual([1, 4]);
-        expect(executedQueriesOf(explanation)[0].text).toBe(seekOn('status'));
+        expect(executedQueriesOf(explanation)[0].text).toBe(`${seekOn('status')}.toArray()`);
     });
 
     it('walks the full cursor for a property only in a compound index', async () => {
@@ -162,7 +168,7 @@ describe('Dexie index seek', () => {
             .toArrayAsync();
 
         expect(data).toHaveLength(15);
-        expect(executedQueriesOf(explanation)[0].text).toContain('seek_orders.toCollection().filter(');
+        expect(executedQueriesOf(explanation)[0].text).toContain('db.seek_orders.toCollection().filter(x => ');
     });
 
     it('seeks the compound entry when both members are fixed', async () => {
@@ -174,7 +180,8 @@ describe('Dexie index seek', () => {
         const [query] = executedQueriesOf(explanation);
 
         expect(data.map(x => x.amount)).toEqual([7]);
-        expect(query.text).toBe('seek_orders.where("[region+amount]").equals([?, ?]) — IndexedDB index seek');
+        expect(query.text).toBe('db.seek_orders.where("[region+amount]").equals([?, ?]).toArray()');
+        expect(query.note).toBe('an IndexedDB index seek');
         expect(query.parameters).toEqual(['eu', 7]);
     });
 
@@ -188,7 +195,8 @@ describe('Dexie index seek', () => {
 
         expect(data).toHaveLength(20);
         expect(data.every(x => x.status !== 'pending')).toBe(true);
-        expect(query.text).toBe('seek_orders.where("status").anyOf(?, ?) — 2 IndexedDB index seeks');
+        expect(query.text).toBe('db.seek_orders.where("status").anyOf(?, ?).toArray()');
+        expect(query.note).toBe('2 IndexedDB index seeks');
         expect(query.parameters).toEqual(['paid', 'shipped']);
     });
 
@@ -217,11 +225,11 @@ describe('Dexie index seek', () => {
         const between = await store.orders.where(([x, p]) => x.score >= p.lo && x.score < p.hi, { lo: 10, hi: 14 }).explain().toArrayAsync();
 
         expect(above.data.map(x => x.score).sort((a, b) => a - b)).toEqual([26, 27, 28, 29]);
-        expect(executedQueriesOf(above.explanation)[0].text).toBe('seek_orders.where("score").above(?) — IndexedDB index seek');
+        expect(executedQueriesOf(above.explanation)[0].text).toBe('db.seek_orders.where("score").above(?).toArray()');
         expect(belowOrEqual.data.map(x => x.score).sort((a, b) => a - b)).toEqual([0, 1, 2, 3]);
-        expect(executedQueriesOf(belowOrEqual.explanation)[0].text).toBe('seek_orders.where("score").belowOrEqual(?) — IndexedDB index seek');
+        expect(executedQueriesOf(belowOrEqual.explanation)[0].text).toBe('db.seek_orders.where("score").belowOrEqual(?).toArray()');
         expect(between.data.map(x => x.score).sort((a, b) => a - b)).toEqual([10, 11, 12, 13]);
-        expect(executedQueriesOf(between.explanation)[0].text).toBe('seek_orders.where("score").between(?, ?, true, false) — IndexedDB index seek');
+        expect(executedQueriesOf(between.explanation)[0].text).toBe('db.seek_orders.where("score").between(?, ?, true, false).toArray()');
         expect(executedQueriesOf(between.explanation)[0].parameters).toEqual([10, 14]);
     });
 
@@ -237,7 +245,15 @@ describe('Dexie index seek', () => {
             .explain()
             .toArrayAsync();
 
-        expect(executedQueriesOf(explanation)[0].text).toContain('seek_orders.toCollection().filter(');
+        expect(executedQueriesOf(explanation)[0].text).toContain('db.seek_orders.toCollection().filter(x => ');
+    });
+
+    it('takes the distinct values of an indexed property, not one per row', async () => {
+        const all = await store.orders.map(x => x.status).toArrayAsync();
+        const { data, explanation } = await store.orders.map(x => x.status).explain().distinctAsync();
+
+        expect([...data].sort()).toEqual([...new Set(all)].sort());
+        expect(executedQueriesOf(explanation)[0].text).toBe('db.seek_orders.toCollection().toArray()');
     });
 
     it('orders by the index and windows in Dexie when there is no filter', async () => {
@@ -245,9 +261,14 @@ describe('Dexie index seek', () => {
         const desc = await store.orders.sortDescending(x => x.createdAt).take(2).explain().toArrayAsync();
 
         expect(asc.data.map(x => x.score)).toEqual([3, 4, 5, 6]);
-        expect(executedQueriesOf(asc.explanation)[0].text).toBe('seek_orders.orderBy("score") — IndexedDB index walk in key order.offset(…).limit(…)');
+        expect(executedQueriesOf(asc.explanation)[0]).toEqual({
+            text: 'db.seek_orders.orderBy("score").offset(?).limit(?).toArray()',
+            parameters: [3, 4],
+            language: 'dexie',
+            note: 'an IndexedDB index walk in key order',
+        });
         expect(desc.data.map(x => x.amount)).toEqual([29, 28]);
-        expect(executedQueriesOf(desc.explanation)[0].text).toBe('seek_orders.orderBy("createdAt").reverse() — IndexedDB index walk in key order.limit(…)');
+        expect(executedQueriesOf(desc.explanation)[0].text).toBe('db.seek_orders.orderBy("createdAt").reverse().limit(?).toArray()');
     });
 
     it('sorts in memory on a nullable property so null rows are not dropped', async () => {
@@ -255,7 +276,7 @@ describe('Dexie index seek', () => {
 
         expect(data).toHaveLength(ROWS);
         expect(data.slice(0, 8).every(x => x.nickname == null)).toBe(true);
-        expect(executedQueriesOf(explanation)[0].text).toBe('seek_orders.toCollection()');
+        expect(executedQueriesOf(explanation)[0].text).toBe('db.seek_orders.toCollection().toArray()');
     });
 
     it('orders by the index and windows in Dexie with a residual predicate in front', async () => {
@@ -270,7 +291,7 @@ describe('Dexie index seek', () => {
         const expected = Array.from({ length: ROWS }, (_, i) => i).filter(i => i % 5 === 1).sort((a, b) => ((a * 7) % ROWS) - ((b * 7) % ROWS)).slice(1, 4);
 
         expect(data.map(x => x.amount)).toEqual(expected);
-        expect(executedQueriesOf(explanation)[0].text).toBe('seek_orders.orderBy("score") — IndexedDB index walk in key order.filter(notes === ?) — JavaScript predicate over a full cursor walk, no index.offset(…).limit(…)');
+        expect(executedQueriesOf(explanation)[0].text).toBe('db.seek_orders.orderBy("score").filter(x => x.notes === ?).offset(?).limit(?).toArray()');
     });
 
     it('windows matches, not table rows, when a predicate remains on a walk or a seek', async () => {
@@ -291,10 +312,12 @@ describe('Dexie index seek', () => {
 
         expect(allWalked).toHaveLength(6);
         expect(walked.data.map(x => x._id)).toEqual(allWalked.slice(2, 4).map(x => x._id));
-        expect(executedQueriesOf(walked.explanation)[0].text).toContain('.offset(…).limit(…)');
+        expect(executedQueriesOf(walked.explanation)[0].text).toContain('.offset(?).limit(?).toArray()');
         expect(allSeeked).toHaveLength(6);
         expect(seeked.data.map(x => x._id)).toEqual(allSeeked.slice(1, 3).map(x => x._id));
-        expect(executedQueriesOf(seeked.explanation)[0].text).toContain('JavaScript predicate over the seeked rows.offset(…).limit(…)');
+        expect(executedQueriesOf(seeked.explanation)[0].text).toContain('.filter(x => ');
+        expect(executedQueriesOf(seeked.explanation)[0].text).toContain('.offset(?).limit(?).toArray()');
+        expect(executedQueriesOf(seeked.explanation)[0].note).toContain('then a JavaScript filter');
     });
 
     it('sorts in memory when a seek is present', async () => {
@@ -308,7 +331,7 @@ describe('Dexie index seek', () => {
         const paidByScoreDesc = Array.from({ length: ROWS }, (_, i) => i).filter(i => i % 3 === 1).sort((a, b) => ((b * 7) % ROWS) - ((a * 7) % ROWS));
 
         expect(data.map(x => x.amount)).toEqual(paidByScoreDesc.slice(0, 2));
-        expect(executedQueriesOf(explanation)[0].text).toBe(seekOn('status'));
+        expect(executedQueriesOf(explanation)[0].text).toBe(`${seekOn('status')}.toArray()`);
     });
 
     it('sums over seeked rows through the translator', async () => {

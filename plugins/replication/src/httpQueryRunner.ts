@@ -65,7 +65,7 @@ export class HttpQueryRunner {
 
             if ('status' in fetched) {
                 if (fetched.status === NOT_MODIFIED) {
-                    event.executedQueries.push({ text: `GET ${url} (304)` });
+                    event.executedQueries.push({ text: `GET ${url}`, language: "http", note: "304 Not Modified: the cached rows were used" });
                     return { kind: 'not-modified' };
                 }
 
@@ -73,7 +73,7 @@ export class HttpQueryRunner {
             }
 
             const data = new JsonTranslator(operation).translate(this.readRows(schema, fetched.text));
-            event.executedQueries.push({ text: `GET ${url}` });
+            event.executedQueries.push({ text: `GET ${url}`, language: "http" });
 
             return { kind: 'modified', data, etag: fetched.etag };
         } catch (err) {

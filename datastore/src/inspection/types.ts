@@ -26,6 +26,8 @@ export interface InspectedCollection {
     readonly name: string;
     readonly schemaId: SchemaId;
     readonly kind: InspectedCollectionKind;
+    /** The dotted paths of the properties declared `.sensitive()`, which a viewer should hide until asked. */
+    readonly sensitivePaths: ReadonlyArray<string>;
     count(): Promise<number>;
     keyOf(row: InspectedRow): string;
     watchCount(onCount: (result: InspectedCount) => void): StopWatching;

@@ -102,7 +102,11 @@ describe("MongoDbPlugin dates", () => {
 
         expect(labels(data)).toEqual(["alpha", "charlie"]);
         expect(explanation.summary.memory).toBe(0);
-        expect(executedQueriesOf(explanation)[0].text).toContain('{"createdDate":{"$gt":"2024-01-01T00:00:00.000Z"}}');
+        expect(executedQueriesOf(explanation)[0]).toEqual({
+            text: 'db.events.find({ "createdDate": { "$gt": ? } })',
+            parameters: ["2024-01-01T00:00:00.000Z"],
+            language: "mongodb",
+        });
     });
 
     it("filters on a date against a Date constructed in the filter, which runs in memory", async () => {
@@ -130,7 +134,8 @@ describe("MongoDbPlugin dates", () => {
             .toArrayAsync();
 
         expect(labels(data)).toEqual(["alpha", "charlie"]);
-        expect(executedQueriesOf(explanation)[0].text).toContain('"$in":["2024-06-15T00:00:00.000Z","2025-06-15T00:00:00.000Z"]');
+        expect(executedQueriesOf(explanation)[0].text).toContain('"$in": [?, ?]');
+        expect(executedQueriesOf(explanation)[0].parameters).toEqual(["2024-06-15T00:00:00.000Z", "2025-06-15T00:00:00.000Z"]);
         expect(labels(await store.events.where(([r, p]) => !p.dates.includes(r.createdDate), { dates }).toArrayAsync())).toEqual(["bravo"]);
     });
 

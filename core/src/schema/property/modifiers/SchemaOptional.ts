@@ -3,6 +3,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDeserialize } from "./SchemaDeserialize";
 import { SchemaNullable } from "./SchemaNullable";
 import { SchemaSearchable } from "./SchemaSearchable";
+import { SchemaSensitive } from "./SchemaSensitive";
 
 export class SchemaOptional<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
@@ -42,5 +43,7 @@ export class SchemaOptional<T extends any, TModifiers extends SchemaModifiers> e
         return new SchemaDeserialize<T | undefined, TModifiers | "deserialize">(deserializer, this);
     }
 
-
+    sensitive() {
+        return new SchemaSensitive<T, TModifiers>(this);
+    }
 }

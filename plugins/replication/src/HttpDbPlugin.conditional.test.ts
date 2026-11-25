@@ -45,7 +45,7 @@ describe('HttpDbPlugin.queryConditional', () => {
 
         const result = await createPlugin().queryConditional(event, '"v1"');
 
-        expect([result.kind, event.executedQueries]).toEqual(['not-modified', [{ text: 'GET https://api.test/swrHardening (304)' }]]);
+        expect([result.kind, event.executedQueries]).toEqual(['not-modified', [{ text: 'GET https://api.test/swrHardening', language: 'http', note: '304 Not Modified: the cached rows were used' }]]);
     });
 
     it('fails a plain query that is answered with a 304', async () => {

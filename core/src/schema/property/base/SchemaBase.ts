@@ -60,6 +60,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
      * gains one more modifier.
      */
     isSearchable: boolean = false;
+    isSensitive: boolean = false;
 
     foreignKeyDefinition: ForeignKey<unknown> | null = null;
     tags: string[] = [];
@@ -94,6 +95,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.innerSchema = entity.innerSchema;
             this.maxLength = entity.maxLength;
             this.isSearchable = entity.isSearchable;
+            this.isSensitive = entity.isSensitive;
             this.isDistinct = entity.isDistinct;
             this.isEtag = entity.isEtag;
             this.etagComparator = entity.etagComparator;

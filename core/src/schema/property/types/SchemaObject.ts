@@ -7,6 +7,7 @@ import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
 import { SchemaTag } from "../modifiers/SchemaTag";
 import { SchemaArray } from "./SchemaArray";
+import { SchemaSensitive } from "../modifiers/SchemaSensitive";
 
 export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
@@ -47,5 +48,7 @@ export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> exte
         return new SchemaTag<T, TModifiers>(tags, this);
     }
 
-
+    sensitive() {
+        return new SchemaSensitive<T, TModifiers>(this);
+    }
 }

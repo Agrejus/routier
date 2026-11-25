@@ -278,4 +278,20 @@ export const queryStyles = `
   margin-top: 6px;
   color: var(--rd-muted);
 }
+
+.statement-note {
+  margin: 0 0 6px;
+  color: var(--rd-muted);
+  font-size: 12px;
+}
+
+.statement-language {
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--rd-raised);
+  color: var(--rd-text);
+  font-family: var(--rd-mono);
+  font-size: 10.5px;
+}
 `;

@@ -5,6 +5,7 @@ import { evaluate } from "./evaluate";
 import { foldConstantCalls } from "./fold";
 import { getProperties } from "./utils";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Call, Comparator, Transformer } from "./types";
+import { REDACTED } from "./redact";
 
 // Error message constants
 const ERROR_MESSAGES = {
@@ -2602,7 +2603,7 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
     const warn = (error: unknown) => logger.warn("Error parsing expression", {
         error,
         collectionName: schema.collectionName,
-        params,
+        params: schema.sensitiveProperties.length > 0 ? REDACTED : params,
         selector: stringifiedFunction
     });
 

@@ -3,7 +3,7 @@ import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-ho
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { BulkPersistResult, SchemaCollection } from "@routier/core/collections";
 import {
-    DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, ExecutedQuery, IDbPlugin, ITranslatedValue,
+    QueryOptionsCollection, DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, ExecutedQuery, IDbPlugin, ITranslatedValue,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
 import { s } from "@routier/core/schema";
@@ -90,7 +90,7 @@ const twoSchemas = new SchemaCollection()
     .set(otelOrders.id, otelOrders);
 
 const queryEvent = (executedQueries: ExecutedQuery[] = []) =>
-    ({ id: "q1", operation: {}, schemas, source: "test-query-source", action: "query", explain: false, executedQueries } as unknown as DbPluginQueryEvent<{}, {}>);
+    ({ id: "q1", operation: { options: new QueryOptionsCollection() }, schemas, source: "test-query-source", action: "query", explain: false, executedQueries } as unknown as DbPluginQueryEvent<{}, {}>);
 
 const persistEvent = { id: "p1", operation: {}, schemas, source: "test-persist-source", action: "persist" } as unknown as DbPluginBulkPersistEvent;
 const destroyEvent = { id: "d1", schemas, source: "test-destroy-source", action: "destroy" } as unknown as DbPluginEvent;

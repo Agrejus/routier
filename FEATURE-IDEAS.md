@@ -114,7 +114,10 @@ The outbox keeps each update's values before the edit as the merge base.
 - **Optional extra:** an `s.crdt()` property type backed by Yjs or Automerge for collaborative
   text.
 
-### 8. Keyset (cursor) pagination
+### 8. Keyset (cursor) pagination - DONE
+
+Shipped as `.cursor(lastRow)`, with `.cursor(null)` for the first page. It adds a sort by the key
+and a filter built by hand, which the database runs when every sort is a non-null property.
 
 - **Current state:** the pagination docs mention no cursors, only skip/take.
 - **Proposal:** `.after(cursor)` over a sorted query, pushed down as
@@ -142,7 +145,11 @@ that lasts across reloads. See "Extending Collections".
 - **Proposal:** a `store.history.undo()` stack over committed saves. It is nearly free, demos
   well, and ORMs don't have it.
 
-### 11. Sensitive fields
+### 11. Sensitive fields - DONE
+
+Shipped as `.sensitive()`, `schema.sensitiveProperties`, and `sensitive: true` on a transform, which
+encryption sets. Routier hides the value in logs, `.explain()`, OpenTelemetry and devtools. It keeps it
+in query results, sync events and dead letters, which the app needs to act on.
 
 - **Current state:** encryption is declared per field as a schema transform, but nothing tells
   Routier's own outputs to hide a value. Logs, OpenTelemetry query text, `explain()` output, and

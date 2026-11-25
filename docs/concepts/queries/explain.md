@@ -46,7 +46,18 @@ Each database step carries `executedQueries` — what the plugin actually ran, r
 }
 ```
 
-`text` is SQL for a SQL engine. A store with no statement language describes its access path instead, for example `products: scanned 3 in-memory records`.
+`text` is the query in the backend's own language, with each value written as `?` and listed in `parameters`. `language` names that language, and `note` says anything about the read that is not code:
+
+| Backend | `text` | `note`, for example |
+| --- | --- | --- |
+| SQLite, D1, MySQL, Postgres | `SELECT ... WHERE "price" > ?` | none |
+| Memory, file system | `products.filter(x => x.price > ?)` | `returned 3 in-memory records` |
+| Dexie | `db.products.where("category").equals(?).filter(x => x.price > ?).toArray()` | `an IndexedDB index seek, then a JavaScript filter over the rows it found` |
+| PouchDB | `db.query("routier_index/...", { key: ?, include_docs: true })`, `db.query((doc, emit) => ...)` or `db.allDocs({ include_docs: true })` | `an indexed view query` |
+| MongoDB | `db.products.find({ "price": { "$gt": ? } })` | none |
+| HTTP | `GET https://api.example.com/products?...` | `304 Not Modified: the cached rows were used` |
+
+A cache hit reports a `note` and no `text`, because no query ran.
 
 Each memory step carries a `reason` code and a one-sentence `explanation`:
 
@@ -120,6 +131,8 @@ All built-in plugins report.
 ::: warning
 `executedQueries.parameters` carries live query values. Treat a logged explanation like a logged query.
 :::
+
+A value compared with a [sensitive](/concepts/schema/modifiers/README#sensitive) property shows as `[redacted]` in the filter detail. When a query filters on a sensitive property, every parameter shows as `[redacted]`. A statement that carries its values inline, such as an HTTP query string, is replaced by a short note.
 
 ## Limits
 

@@ -305,6 +305,7 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
             isNullable: true,
             isOptional: false,
             isReadonly: false,
+            isSensitive: false,
             isUnmapped: false,
             isConcurrency: false,
             indexes: [] as string[],

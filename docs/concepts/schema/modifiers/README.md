@@ -17,6 +17,7 @@ Property modifiers in Routier allow you to customize the behavior, constraints, 
 - Nullable: Allow null.
 - Optional: Allow undefined (omit the field).
 - Readonly: Disallow modification after creation.
+- Sensitive: Hide the value in Routier's logs, `.explain()`, telemetry and devtools.
 - Serialize: Custom serializer (e.g., Date to ISO string).
 - Tracked: Persist computed value for indexing and faster reads.
 
@@ -35,6 +36,7 @@ Common type-specific modifiers:
 - **`.distinct()`** — string, number, boolean, and date
 - **`.foreignKey()`** — string and number
 - **`.searchable()`** — string only
+- **`.sensitive()`** — string, number, boolean, date, object and array, and after `.optional()` or `.nullable()`
 
 See [Schema API](/concepts/schema/schema-api#modifier-matrix) for the complete matrix.
 
@@ -143,6 +145,25 @@ Makes the property read-only after creation.
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/readonly-example.ts
 
 **Available on:** `string`, `number`, `boolean`, `date`, `file`, and `vector`
+
+### `.sensitive()`
+
+Keeps the value out of what Routier itself prints and reports. Use it for values such as tax IDs, phone numbers or card numbers.
+
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/sensitive-example.ts
+
+Routier hides the value in:
+
+- **Logs:** rows in Routier's log lines show `[redacted]` in place of the value.
+- **`.explain()`:** a filter value compared with the property shows `[redacted]`. When a query filters on a sensitive property, its statement parameters show `[redacted]`. A statement that carries its values inline, such as an HTTP query string, is replaced by a short note.
+- **OpenTelemetry:** `db.query.text` follows the same rule as `.explain()`.
+- **Devtools:** the value shows as `••••••` until you choose **Show sensitive values**.
+
+Routier still stores the value as it is, and returns it in query results. Your app also gets it in sync events and dead letters, so it can show or fix a rejected change. To keep the stored value secret, encrypt it as well. An [encrypted property](/integrations/plugins/built-in-plugins/encryption) is sensitive without `.sensitive()`.
+
+Every property inside a sensitive object is sensitive too. `schema.sensitiveProperties` lists them all, which helps when you build your own data inventory.
+
+**Available on:** `string`, `number`, `boolean`, `date`, `object`, and `array`, and after `.optional()` or `.nullable()`
 
 ## Serialization
 

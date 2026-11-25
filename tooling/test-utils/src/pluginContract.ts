@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "@jest/globals";
 import { IDbPlugin } from "@routier/core";
 import { s } from "@routier/core/schema";
+import type { InferType } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
 import { executedQueriesOf } from "@routier/core/plugins";
 
@@ -1244,6 +1245,47 @@ export function describePluginContract(
                 // SQL collations and JS string comparison disagree often enough that this
                 // needs pinning per plugin rather than assumed.
                 expect(found.map(p => p.name)).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
+            });
+
+            test("sorts by a second key where the first key ties", async () => {
+                const found = await (await seeded()).products.sort(p => p.category).sortDescending(p => p.price).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo", "Alpha", "Delta", "Charlie"]);
+            });
+
+            test("takes a prefix of a result sorted by two keys", async () => {
+                const found = await (await seeded()).products.sort(p => p.category).sortDescending(p => p.price).take(3).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo", "Alpha", "Delta"]);
+            });
+
+            test("pages with a cursor", async () => {
+                const dataStore = await seeded();
+                const first = await dataStore.products.sortDescending(p => p.price).cursor(null).take(2).toArrayAsync();
+                const second = await dataStore.products.sortDescending(p => p.price).cursor(first[1]).take(2).toArrayAsync();
+                const third = await dataStore.products.sortDescending(p => p.price).cursor(second[1]).take(2).toArrayAsync();
+
+                expect([first, second, third].map(page => page.map(p => p.name))).toEqual([["Delta", "Bravo"], ["Charlie", "Alpha"], []]);
+            });
+
+            test("pages with a cursor through rows that tie on the sort", async () => {
+                const dataStore = await seeded();
+                const names: string[] = [];
+                let cursor: InferType<typeof contractProductSchema> | null = null;
+
+                for (let page = 0; page < 5; page++) {
+                    const rows = await dataStore.products.sort(p => p.category).cursor(cursor).take(1).toArrayAsync();
+
+                    if (rows.length === 0) {
+                        break;
+                    }
+
+                    names.push(...rows.map(p => p.name));
+                    cursor = rows[0];
+                }
+
+                expect(names.slice(0, 2).sort()).toEqual(["Alpha", "Bravo"]);
+                expect(names.slice(2).sort()).toEqual(["Charlie", "Delta"]);
             });
 
             test("skips a prefix of the result", async () => {

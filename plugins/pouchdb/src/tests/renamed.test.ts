@@ -282,7 +282,7 @@ describe('renamed properties', () => {
             .explain()
             .toArrayAsync();
 
-        expect(executedQueriesOf(explanation).map(q => q.text)).toEqual([expect.stringContaining('indexed view query')]);
+        expect(executedQueriesOf(explanation).map(q => [q.text, q.note])).toEqual([[expect.stringMatching(/^db\.query\("/), 'an indexed view query']]);
         expect([...data].sort()).toEqual(['a', 'b']);
     });
 

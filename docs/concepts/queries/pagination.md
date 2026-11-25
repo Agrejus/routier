@@ -9,6 +9,7 @@ Use `take` and `skip` to implement pagination for large datasets.
 ## Quick Navigation
 
 - [Basic Pagination](#basic-pagination)
+- [Cursor Pagination](#cursor-pagination)
 - [Simple Take and Skip](#simple-take-and-skip)
 - [Pagination with Filtering](#pagination-with-filtering)
 - [Pagination with Sorting](#pagination-with-sorting)
@@ -33,6 +34,18 @@ const rows = await dataStore.products
 ```
 
 Always sort before `skip()` and `take()`. Without a stable order, the same row can move between pages even when the underlying data has not changed.
+
+## Cursor Pagination
+
+`skip` reads past every row it skips, and a row added or removed on an earlier page shifts the rest. For "load more" and infinite scroll, continue from the last row you showed instead. Pass it to `.cursor()`, and pass `null` for the first page:
+
+<<< @/_snippets/code/from-docs/concepts/queries/pagination/cursor-pagination.ts
+
+- Write `.cursor()` after the sorts and before `.take()`. It throws when there is no sort before it, or when `.skip()`, `.take()` or `.map()` comes first.
+- Rows that tie on every sort are ordered by the key. So no row is skipped or shown twice, even when many rows share a `createdAt`.
+- Use the same query for every page, including the first. That keeps the order the same on every page.
+- `.cursor()` also works on a live query: `.subscribe().sort(...).cursor(lastRow).take(20)` keeps that page up to date.
+- When every sort is a property that cannot be null, the database runs the cursor filter. A sort on a nullable property, or on a computed value, still works, but the filter runs in memory.
 
 ## Simple Take and Skip
 

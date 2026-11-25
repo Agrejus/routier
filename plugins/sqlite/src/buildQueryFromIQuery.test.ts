@@ -124,6 +124,18 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         expect(buildFromQueryOperation(capturedQuery).sql).toBe('SELECT "id", "name", "age" FROM "users" ORDER BY "age" ASC');
     });
 
+    it('orders by every sort, the first one first', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sort(x => x.name).sortDescending(x => x.age).toArray(jest.fn<any>());
+
+        expect(buildFromQueryOperation(capturedQuery).sql).toBe('SELECT "id", "name", "age" FROM "users" ORDER BY "name" ASC, "age" DESC');
+    });
+
     it('should build a query with a filter from natural JavaScript', () => {
         let capturedQuery: any = null;
 
