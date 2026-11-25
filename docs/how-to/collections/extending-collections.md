@@ -11,6 +11,8 @@ You can extend a generated collection to add domain-specific helpers while prese
 - [Basic Example](#basic-example)
 - [Adding Helper Methods](#adding-helper-methods)
 - [Combining Operations](#combining-operations)
+- [Recipe: Upsert and Remove by Query](#recipe-upsert-and-remove-by-query)
+- [Recipe: Undo and Redo](#recipe-undo-and-redo)
 - [Notes](#notes)
 - [When to Use](#when-to-use)
 
@@ -28,7 +30,7 @@ This example shows how to add helper methods that:
 
 ### Adding Helper Methods
 
-You can add any number of custom methods that work with your collection's data:
+For more than a method or two, write a named class that extends `Collection`. Pass it to `create()`, and give the property its type:
 
 <<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-2.ts
 
@@ -38,10 +40,29 @@ This example demonstrates:
 - Query helpers with parameters (`findLowStockAsync`)
 - Bulk operations that work with multiple entities (`bulkRestockAsync`)
 
+### Recipe: Upsert and Remove by Query
+
+Routier has no built-in upsert. Add one to your own collection. `upsertAsync` looks the row up by its key. It adds the row when it is missing, and it updates the row when it exists:
+
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/upsert.ts
+
+- Removing by query is built in: `where(...).removeAsync()` removes every matching row. `removeByEmailDomainAsync` gives that query a name.
+- Like every change, the upsert is saved by `saveChangesAsync()`.
+
+### Recipe: Undo and Redo
+
+The collection can keep its own undo and redo stacks. `edit` records each row before and after a change. `undo` and `redo` put a row back to one of those states:
+
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/undo-redo.ts
+
+- Each undo or redo is a normal change, so save it with `saveChangesAsync()`.
+- The stacks live in memory and cover edits made through `edit`. They are empty again after a reload.
+- For a history that lasts across reloads, or that covers adds and removes, record changes with [`.audit()`](/guides/history-tracking).
+
 ### Notes
 
-- The `create((Instance, ...args) => new class extends Instance { ... })` pattern ensures the subclass receives the same constructor args and types as the base collection.
-- Always call `super(...args)` in the constructor to properly initialize the base collection.
+- Write a named class that extends `Collection` and pass `(_, dependencies) => new MyCollection(dependencies)` to `create()`. Give the property its type, as in `products: ProductCollection = ...`. Without the type, TypeScript's `strict` mode reports that the property "implicitly has type 'any'".
+- The `create((Instance, ...args) => new class extends Instance { ... })` pattern also works for a quick helper. Call `super(...args)` in its constructor.
 - Prefer adding cohesive, high-level helpers (e.g. `addWithDefaults`, `findLowStock`, `bulkRestock`) rather than simple wrappers.
 - All methods from the selected mode remain available (`where`, `map`, `toArrayAsync`, and—for writable modes—`addAsync`, `removeAsync`, attachments, etc.).
 - Extended collections maintain full type safety - TypeScript will infer types from your schema automatically.

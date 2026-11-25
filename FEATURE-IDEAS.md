@@ -120,7 +120,10 @@ and a filter built by hand, which the database runs when every sort is a non-nul
   `WHERE (sort, id) > (?, ?)`. It stays stable under inserts and is O(1) at depth. It is also
   the right primitive for infinite-scroll live queries.
 
-### 9. First-class upsert and bulk set operations
+### 9. First-class upsert and bulk set operations - DONE (docs)
+
+Resolved as a recipe: a collection class that extends `Collection` adds `upsertAsync`, and
+`where(...).removeAsync()` already removes by query. See "Extending Collections".
 
 - **Current state:** upsert appears only in `specs/known-defects.md`, as inconsistent behavior:
   `MemoryPlugin` treats add as upsert, while Dexie's `bulkAdd` throws.
@@ -129,7 +132,10 @@ and a filter built by hand, which the database runs when every sort is a non-nul
 - **Also:** query-scoped `updateWhere` and `removeWhere`, so a bulk change doesn't need to load
   rows first.
 
-### 10. Undo/redo
+### 10. Undo/redo - DONE (docs)
+
+Resolved as a recipe: a collection class keeps undo and redo stacks. `.audit()` covers history
+that lasts across reloads. See "Extending Collections".
 
 - **Current state:** the change tracker already records previous values.
 - **Proposal:** a `store.history.undo()` stack over committed saves. It is nearly free, demos

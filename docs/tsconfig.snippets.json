@@ -185,6 +185,8 @@
         "_snippets/code/from-docs/guides/schema-migrations/reshape.ts",
         "_snippets/code/from-docs/guides/schema-migrations/snapshot.ts",
         "_snippets/code/from-docs/how-to/collections/extending-collections/block-2.ts",
+        "_snippets/code/from-docs/how-to/collections/extending-collections/undo-redo.ts",
+        "_snippets/code/from-docs/how-to/collections/extending-collections/upsert.ts",
         "_snippets/code/from-docs/how-to/crud/create/appropriate-defaults.ts",
         "_snippets/code/from-docs/how-to/crud/create/batch-creation.ts",
         "_snippets/code/from-docs/how-to/crud/create/batch-performance.ts",

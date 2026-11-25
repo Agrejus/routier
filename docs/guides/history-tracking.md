@@ -116,7 +116,7 @@ Once you have a history table, you can query it to see all historical states of 
 - **Audit trails**: Track all changes over time for compliance and accountability (use `.audit()`)
 - **Version history**: Maintain snapshots of entity states for comparison
 - **Change tracking**: Know exactly when and how data changed
-- **Undo/Redo**: Retrieve previous states to restore entities to earlier versions
+- **Undo/Redo**: Retrieve previous states to restore entities to earlier versions. For undo and redo within a session, see the [undo and redo recipe](/how-to/collections/extending-collections#recipe-undo-and-redo).
 - **Debugging**: Understand how data evolved over time during troubleshooting
 
 ### Important Considerations
