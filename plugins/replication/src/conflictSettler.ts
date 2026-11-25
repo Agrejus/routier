@@ -4,6 +4,7 @@ import { logger, type UnknownRecord } from '@routier/core/utilities';
 import { HttpStatusError, isConflictStatus } from './httpUtils';
 import { NOTHING_DELIVERED, type ConflictSettler, type DeliveryOutcome } from './queuedWrites';
 import { failureKindOf } from './requestFailures';
+import { isRecord } from './records';
 import { buildUpdatePayload } from './swrUtils';
 import { emitEvent, type FailureKind, type SyncEvent } from './syncHooks';
 import type { QueuedChange, UnsyncedFlushUnit, UnsyncedQueue } from './UnsyncedQueue';
@@ -37,8 +38,6 @@ const STILL_QUEUED: DeliveryOutcome = { ...NOTHING_DELIVERED, failed: 1 };
 export const isConflictResponse = (failure: FailureKind): boolean =>
     failure.kind === 'http' && isConflictStatus(failure.status);
 
-export const isRecord = <TValue>(value: TValue): value is TValue & UnknownRecord =>
-    typeof value === 'object' && value !== null && Array.isArray(value) === false;
 
 const idsOf = (schema: Schema, row: UnknownRecord) => JSON.stringify(schema.idProperties.map(property => row[property.getResolvedName()]));
 
@@ -70,7 +69,11 @@ const rootColumns = (schema: Schema) => schema.properties.filter(property => pro
  * The values `stored` holds for the fields an update changes: the fields in `delta`, or every
  * root field when the delta is empty, which means the whole row was written.
  */
-export const baseOf = (schema: Schema, stored: UnknownRecord, delta: UnknownRecord): UnknownRecord => {
+export const baseOf = (schema: Schema, stored: UnknownRecord | undefined, delta: UnknownRecord): UnknownRecord => {
+    if (stored == null) {
+        return {};
+    }
+
     const changed = Object.keys(delta);
     const columns = changed.length > 0 ? changed : rootColumns(schema).map(property => property.getResolvedName());
 

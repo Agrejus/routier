@@ -1,14 +1,13 @@
 import { ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression, type Expression } from '@routier/core/expressions';
 import { Query, QueryOptionsCollection, type IDbPlugin } from '@routier/core/plugins';
-import { SchemaCollection } from '@routier/core/collections';
+import type { SchemaCollection } from '@routier/core/collections';
 import { Result } from '@routier/core/results';
 import type { CompiledSchema } from '@routier/core/schema';
 import { uuid, type UnknownRecord } from '@routier/core/utilities';
+import { isRecord } from './records';
 
 type Schema = CompiledSchema<UnknownRecord>;
 
-const isRecord = <TValue>(value: TValue): value is TValue & UnknownRecord =>
-    typeof value === 'object' && value !== null && Array.isArray(value) === false;
 
 const keysOf = (schema: Schema, row: UnknownRecord) =>
     schema.idProperties.map(property => ({ property, value: row[property.getResolvedName()] }));
@@ -38,11 +37,11 @@ export const keyFilter = (schema: Schema, rows: readonly UnknownRecord[]): Query
 };
 
 /** Reads the rows of `schema` with the same keys as `rows`, through `plugin`. */
-export const queryByKeys = (plugin: IDbPlugin, schemas: SchemaCollection | null, schema: Schema, rows: readonly UnknownRecord[], source: string): Promise<UnknownRecord[]> =>
-    new Promise((resolve, reject) => {
+export const queryByKeys = (plugin: IDbPlugin, schemas: SchemaCollection, schema: Schema, rows: readonly UnknownRecord[], source: string): Promise<UnknownRecord[]> =>
+    rows.length === 0 ? Promise.resolve([]) : new Promise((resolve, reject) => {
         plugin.query({
             id: uuid(8),
-            schemas: schemas ?? new SchemaCollection(),
+            schemas,
             source,
             action: 'query',
             explain: false,

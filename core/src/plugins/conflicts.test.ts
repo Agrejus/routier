@@ -69,6 +69,14 @@ describe("fieldMerge", () => {
         expect(merged).toEqual({ ...base, due, tags: ["b"] });
     });
 
+    it("compares an equal value JSON cannot write without failing", () => {
+        type Counter = { id: string; total: bigint; title: string };
+        const counter = { id: "c", total: 10n, title: "a" };
+        const merged = fieldMerge<Counter>()({ collectionName: "counters", kind: "update", base: { total: 10n, title: "a" }, local: { ...counter, title: "b" }, remote: counter });
+
+        expect(merged).toEqual({ ...counter, title: "b" });
+    });
+
     it("leaves a row the server deleted deleted", () => {
         expect(fieldMerge<Todo>()(conflict({ title: "Mine" }, null, ["title"]))).toBeNull();
     });

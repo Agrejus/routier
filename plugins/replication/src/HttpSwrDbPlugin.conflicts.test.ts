@@ -166,6 +166,7 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
 
         await plugin.syncNow();
 
+        expect(resolver.mock.calls[0]?.[0].base).toStrictEqual({ title: 'Write' });
         expect(resolver).toHaveBeenCalledWith({
             collectionName: 'conflictTodos',
             kind: 'update',
@@ -201,8 +202,10 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
     it('rejects the change when the resolver throws', async () => {
         conflictOnce({ ...SERVER, version: 2 });
         const { plugin } = await editTitle({ resolveConflict: () => { throw new Error('no'); } });
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
         expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('resolveConflict threw'), expect.objectContaining({ collectionName: 'conflictTodos' }));
         expect(events).toContainEqual(expect.objectContaining({ type: 'changes-rejected', conflict: true }));
     });
 
@@ -292,11 +295,24 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
         const { plugin, store } = open({ resolveConflict: resolver });
         const todo = await store.todos.firstAsync(x => x.id === 't1');
 
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+
         jest.spyOn(Reflect.get(plugin, 'swrStore') as MemoryPlugin, 'query').mockImplementationOnce((_, done) => done({ ok: 'error', error: new Error('store offline') } as never));
         todo.title = 'Mine';
         await store.saveChangesAsync();
         await plugin.syncNow();
 
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('could not read the rows before a save'), expect.objectContaining({ eventId: expect.any(String) }));
+
         expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ base: {}, local: expect.objectContaining({ title: 'Mine' }) }));
+    });
+
+    it('leaves a failure that is not a conflict to the usual handling, even with a resolver', async () => {
+        http.respondToPost(() => ({ status: 503, body: { ...SERVER, version: 2 } }));
+        const resolver = jest.fn<ConflictResolver>(() => null);
+        const { plugin } = await editTitle({ resolveConflict: resolver });
+
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
+        expect(resolver).not.toHaveBeenCalled();
     });
 });

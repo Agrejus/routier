@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { logger, uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpStatusError, NetworkError } from './httpUtils';
-import { addOutcomes, bodyForUnits, NOTHING_DELIVERED, QueuedWriteSender } from './queuedWrites';
+import { addOutcomes, bodyForUnits, noConflicts, NOTHING_DELIVERED, QueuedWriteSender } from './queuedWrites';
 import type { SwrRequestError, SyncEvent } from './syncHooks';
 import { UnsyncedQueue, type UnsyncedFlushUnit } from './UnsyncedQueue';
 import { testSchema } from './__tests__/httpTestKit';
@@ -271,5 +271,14 @@ describe('addOutcomes', () => {
 
     it('starts from nothing', () => {
         expect(NOTHING_DELIVERED).toEqual({ sent: 0, failed: 0, rejected: 0, resolved: 0 });
+    });
+});
+
+describe('noConflicts', () => {
+    it('calls nothing a conflict, and rejects anything it is asked to settle', async () => {
+        const settler = noConflicts();
+
+        expect(settler.isConflict(new Error('x'))).toBe(false);
+        expect(await settler.settle('items', { rows: [], kind: 'add', entity: {}, payload: {}, opId: null, base: {} }, new Error('x'))).toBe('reject');
     });
 });

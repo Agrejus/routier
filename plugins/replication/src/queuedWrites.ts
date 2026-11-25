@@ -22,6 +22,9 @@ export type ConflictSettler = {
     settle: (collectionName: string, unit: UnsyncedFlushUnit, error: Error) => Promise<DeliveryOutcome | 'reject'>;
 };
 
+/** No resolver: nothing is a conflict, so every failure takes the usual path. */
+export const noConflicts = (): ConflictSettler => ({ isConflict: () => false, settle: async () => 'reject' });
+
 export type QueuedWriteSenderOptions = {
     queue: UnsyncedQueue;
     post: (url: string, body: string, collectionName: string) => Promise<unknown>;
@@ -71,8 +74,11 @@ export const bodyForUnits = (units: UnsyncedFlushUnit[]): string => {
 export class QueuedWriteSender {
     private readonly options: QueuedWriteSenderOptions;
 
+    private readonly conflicts: ConflictSettler;
+
     constructor(options: QueuedWriteSenderOptions) {
         this.options = options;
+        this.conflicts = options.conflicts ?? noConflicts();
     }
 
     async send(collectionName: string, url: string, units: UnsyncedFlushUnit[]): Promise<DeliveryOutcome> {
@@ -83,7 +89,7 @@ export class QueuedWriteSender {
             onError: this.options.onError,
             actions: ({ retry, reject, defer }: ActionKit) => ({ retry, reject, defer }),
             unhandled: (kit: ActionKit) => kit.defer(),
-            isConflict: this.options.conflicts?.isConflict,
+            isConflict: this.conflicts.isConflict,
         });
 
         if (settled.outcome === 'success') {
@@ -97,10 +103,8 @@ export class QueuedWriteSender {
             return this.narrow(collectionName, url, units, settled.error, refused => this.reject(collectionName, refused, settled.error));
         }
 
-        const conflicts = this.options.conflicts;
-
-        if (settled.outcome === 'conflict' && conflicts != null) {
-            return this.narrow(collectionName, url, units, settled.error, refused => this.settleConflicts(conflicts, collectionName, refused, settled.error));
+        if (settled.outcome === 'conflict') {
+            return this.narrow(collectionName, url, units, settled.error, refused => this.settleConflicts(collectionName, refused, settled.error));
         }
 
         await this.options.queue.recordFailedAttempt(rows).catch(error =>
@@ -131,11 +135,11 @@ export class QueuedWriteSender {
         return rest.length === 0 ? settled : addOutcomes(settled, await this.send(collectionName, url, rest));
     }
 
-    private async settleConflicts(conflicts: ConflictSettler, collectionName: string, units: UnsyncedFlushUnit[], error: Error): Promise<DeliveryOutcome> {
+    private async settleConflicts(collectionName: string, units: UnsyncedFlushUnit[], error: Error): Promise<DeliveryOutcome> {
         let outcome = NOTHING_DELIVERED;
 
         for (const unit of units) {
-            const settled = await conflicts.settle(collectionName, unit, error);
+            const settled = await this.conflicts.settle(collectionName, unit, error);
 
             outcome = addOutcomes(outcome, settled === 'reject' ? await this.reject(collectionName, [unit], error) : settled);
         }

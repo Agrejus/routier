@@ -18,6 +18,11 @@ const plainSchema: CompiledSchema<UnknownRecord> = s.define('settlerPlain', {
     title: s.string(),
 }).compile() as never;
 
+const nestedSchema: CompiledSchema<UnknownRecord> = s.define('settlerNested', {
+    id: s.string().key(),
+    address: s.object({ street: s.string() }),
+}).compile() as never;
+
 const local = { id: 't1', title: 'Mine', version: 1 };
 const conflictWith = (body: unknown) => new HttpStatusError(409, 'conflict', null, body, { get: () => null });
 
@@ -57,11 +62,19 @@ describe('baseOf', () => {
     });
 
     it('picks every root field when the update writes the whole row', () => {
-        expect(baseOf(schema, stored, {})).toEqual(stored);
+        expect(baseOf(schema, stored, {})).toStrictEqual(stored);
+    });
+
+    it('picks a nested object whole, not its inner fields', () => {
+        expect(baseOf(nestedSchema, { id: 'a', address: { street: 'Main' }, street: 'stray' }, {})).toStrictEqual({ id: 'a', address: { street: 'Main' } });
     });
 
     it('leaves out a field the stored row does not hold', () => {
-        expect(baseOf(schema, { id: 't1', title: 'Write' }, { version: 2 })).toEqual({});
+        expect(baseOf(schema, { id: 't1', title: 'Write' }, { version: 2 })).toStrictEqual({});
+    });
+
+    it('is empty when there is no stored row', () => {
+        expect(baseOf(schema, undefined, { title: 'Mine' })).toStrictEqual({});
     });
 });
 
@@ -85,7 +98,7 @@ describe('requeuedChange', () => {
     });
 
     it('keeps the row as it is when the schema has no version', () => {
-        expect(requeuedChange(plainSchema, { id: 't1', title: 'Mine' }, { id: 't1', title: 'Theirs' })?.entity).toEqual({ id: 't1', title: 'Mine' });
+        expect(requeuedChange(plainSchema, { id: 't1', title: 'Mine' }, { id: 't1', title: 'Theirs' })?.entity).toStrictEqual({ id: 't1', title: 'Mine' });
     });
 
     it('is nothing when the row already matches the server', () => {
@@ -96,11 +109,11 @@ describe('requeuedChange', () => {
 describe('createConflictSettler', () => {
     const unit = (entity: unknown): UnsyncedFlushUnit => ({ rows: [], kind: 'update', entity, payload: entity, opId: null, base: {} });
 
-    const settler = (fetchRemote: () => Promise<UnknownRecord | null>, schemaOf = () => schema) => {
+    const settler = (fetchRemote: () => Promise<UnknownRecord | null>, schemaOf: () => CompiledSchema<UnknownRecord> | null = () => schema, isConflict = isConflictResponse) => {
         const queue = new UnsyncedQueue(new MemoryPlugin(`settler-${Math.random()}`));
         const recordFailedAttempt = jest.spyOn(queue, 'recordFailedAttempt').mockResolvedValue();
         const resolver = jest.fn(() => null);
-        const settle = createConflictSettler(resolver, isConflictResponse, {
+        const settle = createConflictSettler(resolver, isConflict, {
             queue,
             schemaOf,
             fetchRemote,
@@ -119,11 +132,21 @@ describe('createConflictSettler', () => {
         expect(settle.isConflict(new Error('not a request'))).toBe(false);
     });
 
+    it('never asks isConflict about an error that did not come from a request', () => {
+        const isConflict = jest.fn(() => true);
+        const { settle } = settler(async () => null, () => schema, isConflict);
+
+        expect(settle.isConflict(new Error('store failed'))).toBe(false);
+        expect(isConflict).not.toHaveBeenCalled();
+    });
+
     it('rejects a change for a collection it has no schema for', async () => {
-        const { settle, resolver } = settler(async () => null, () => null);
+        const fetchRemote = jest.fn(async () => null);
+        const { settle, resolver } = settler(fetchRemote, () => null);
 
         expect(await settle.settle('unknown', unit(local), conflictWith(null))).toBe('reject');
         expect(resolver).not.toHaveBeenCalled();
+        expect(fetchRemote).not.toHaveBeenCalled();
     });
 
     it('rejects a change whose row is not an object', async () => {
@@ -134,8 +157,10 @@ describe('createConflictSettler', () => {
 
     it('keeps the change queued, without asking the resolver, when the server row cannot be read', async () => {
         const { settle, resolver, recordFailedAttempt } = settler(async () => { throw new Error('offline'); });
+        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
 
         expect(await settle.settle('settlerTodos', unit(local), conflictWith(null))).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('could not read the server row for a conflict'), expect.objectContaining({ collectionName: 'settlerTodos' }));
         expect(resolver).not.toHaveBeenCalled();
         expect(recordFailedAttempt).toHaveBeenCalledTimes(1);
     });

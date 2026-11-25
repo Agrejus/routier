@@ -153,6 +153,7 @@ function parseBase(row: UnsyncedQueueRow): Record<string, unknown> {
     try {
         return JSON.parse(row.baseJson) as Record<string, unknown>;
     } catch {
+        logger.warn('[UnsyncedQueue] failed to parse baseJson; a conflict on this row merges without a base', { rowId: row.id });
         return {};
     }
 }
@@ -247,11 +248,11 @@ export class UnsyncedQueue {
 
             const recordIds = recordIdsKey(schemaAny, c.entity);
             const rowId = rowIdOf(collectionName, c.kind, recordIds);
-            const previous = c.kind === 'update' ? existing.get(rowId) : undefined;
+            const previous = existing.get(rowId);
             const payload = previous != null
                 ? mergeUpdatePayloads(previous.payload, c.payload ?? null)
                 : c.payload ?? null;
-            const base = c.kind === 'update' ? { ...c.base, ...previous?.base } : {};
+            const base = { ...c.base, ...previous?.base };
 
             return {
                 recordIds,
