@@ -110,7 +110,10 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 - **Optional extra:** an `s.crdt()` property type backed by Yjs or Automerge for collaborative
   text.
 
-### 8. Keyset (cursor) pagination
+### 8. Keyset (cursor) pagination - DONE
+
+Shipped as `.cursor(lastRow)`, with `.cursor(null)` for the first page. It adds a sort by the key
+and a filter built by hand, which the database runs when every sort is a non-null property.
 
 - **Current state:** the pagination docs mention no cursors, only skip/take.
 - **Proposal:** `.after(cursor)` over a sorted query, pushed down as
