@@ -6,6 +6,7 @@ import { uuid } from '@routier/core/utilities';
 import { UnsyncedQueue } from './UnsyncedQueue';
 import type { QueuedChange } from './UnsyncedQueue';
 import { readQueueRows, testSchema, writeQueueRows } from './__tests__/httpTestKit';
+import { logger } from '@routier/core/utilities';
 
 /**
  * The queue is where the "no acked write is lost" promise actually lives, so its failure paths
@@ -480,7 +481,7 @@ describe('UnsyncedQueue merge bases', () => {
     });
 
     it('warns and merges without a base when a stored base is not JSON', async () => {
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
         await writeQueueRows(queueStore, [{ id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'update', entityJson: '{"id":"a","name":"B"}', baseJson: '{not json' }]);
 
@@ -490,7 +491,7 @@ describe('UnsyncedQueue merge bases', () => {
     });
 
     it('does not warn about a row that carries no base', async () => {
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
         await writeQueueRows(queueStore, [{ id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'add', entityJson: '{"id":"a","name":"A"}' }]);
         await unitBase();

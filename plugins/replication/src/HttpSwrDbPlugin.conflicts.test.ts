@@ -8,6 +8,7 @@ import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
 import type { HttpSwrDbPluginOptions } from './HttpSwrDbPlugin';
 import type { SyncEvent } from './syncHooks';
 import { installFetchMock, readQueueRows, waitFor } from './__tests__/httpTestKit';
+import { logger } from '@routier/core/utilities';
 
 const todoSchema = s.define('conflictTodos', {
     id: s.string().key(),
@@ -202,7 +203,7 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
     it('rejects the change when the resolver throws', async () => {
         conflictOnce({ ...SERVER, version: 2 });
         const { plugin } = await editTitle({ resolveConflict: () => { throw new Error('no'); } });
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
         expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
         expect(warn).toHaveBeenCalledWith(expect.stringContaining('resolveConflict threw'), expect.objectContaining({ collectionName: 'conflictTodos' }));
@@ -295,7 +296,7 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
         const { plugin, store } = open({ resolveConflict: resolver });
         const todo = await store.todos.firstAsync(x => x.id === 't1');
 
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
         jest.spyOn(Reflect.get(plugin, 'swrStore') as MemoryPlugin, 'query').mockImplementationOnce((_, done) => done({ ok: 'error', error: new Error('store offline') } as never));
         todo.title = 'Mine';

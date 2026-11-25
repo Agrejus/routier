@@ -6,6 +6,7 @@ import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpStatusError, NetworkError } from './httpUtils';
 import { baseOf, createConflictSettler, isConflictResponse, remoteInResponse, requeuedChange, sameKeys } from './conflictSettler';
 import { UnsyncedQueue, type UnsyncedFlushUnit } from './UnsyncedQueue';
+import { logger } from '@routier/core/utilities';
 
 const schema: CompiledSchema<UnknownRecord> = s.define('settlerTodos', {
     id: s.string().key(),
@@ -157,7 +158,7 @@ describe('createConflictSettler', () => {
 
     it('keeps the change queued, without asking the resolver, when the server row cannot be read', async () => {
         const { settle, resolver, recordFailedAttempt } = settler(async () => { throw new Error('offline'); });
-        const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
 
         expect(await settle.settle('settlerTodos', unit(local), conflictWith(null))).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
         expect(warn).toHaveBeenCalledWith(expect.stringContaining('could not read the server row for a conflict'), expect.objectContaining({ collectionName: 'settlerTodos' }));
