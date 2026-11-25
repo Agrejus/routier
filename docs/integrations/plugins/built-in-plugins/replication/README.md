@@ -72,6 +72,9 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `maxAgeMs`: how long cached data is considered fresh before revalidation starts.
 - `unsyncedQueueStore`: where pending writes are persisted until the server confirms them.
 - `autoSync`: turns on background replay (off by default); `true` uses the defaults.
+- `resolveConflict(conflict)`: settles a queued write the server refuses as a conflict. Use `serverWins()`, `clientWins()`, `fieldMerge()`, `byCollection()` or your own function. See [Resolving conflicts](/guides/local-first-apps#resolving-conflicts).
+- `isConflict(failure)`: which failures are conflicts (default: an HTTP `409`).
+- `fetchRemote(collectionName, local)`: reads the server's current row when the conflict response does not carry it (default: a GET filtered on the row's key).
 
 ## Errors, Retries and Events
 
@@ -86,7 +89,8 @@ an action is called. A 401 is just `kind: "http"`: refresh the token and call `r
 `getHeaders` runs again.
 
 `onEvent(event)` reports what happened: `read` (`ok`, `status`), `changes-rejected` (`conflict` for a
-409) and `synced` (`sent`, `failed`, `rejected`).
+409), `synced` (`sent`, `failed`, `rejected`, `resolved`) and, with `resolveConflict`,
+`conflict-resolved` (`collectionName`, `outcome`: `merged`, `server` or `deferred`).
 
 `createRetry({ maxAttempts, baseDelayMs, maxDelayMs })` is an `onError` with exponential backoff for
 network failures, 408, 429 and 5xx. `defaultSync()` returns `{ onError: createRetry(), autoSync: true }`

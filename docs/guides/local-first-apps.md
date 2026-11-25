@@ -180,7 +180,7 @@ Every failure goes to `onError`, which decides. Without one, failed writes stay 
 | Success | Remove confirmed operations from the queue |
 | `401` or `403` | Not retried; the write stays queued. Refresh credentials in your own `onError` and call `retry()` |
 | `408`, `429`, network error, or `5xx` | Retry with backoff; once attempts run out, keep queued |
-| `409` | Reject: the change is dead-lettered, reported as `changes-rejected` with `conflict: true`, and the server copy wins on the next read |
+| `409` | With `resolveConflict`: the resolver settles it (see [Resolving conflicts](#resolving-conflicts)). Without it: reject, so the change is dead-lettered, reported as `changes-rejected` with `conflict: true`, and the server copy wins on the next read |
 | Other permanent `4xx` | Reject rather than retry forever |
 
 For batched validation, the server can return `rejectedOpIds` so valid operations continue without one request per entity. See [Structured Permanent Rejections](/integrations/plugins/built-in-plugins/replication/README#structured-permanent-rejections).
