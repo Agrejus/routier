@@ -59,9 +59,12 @@ describe(".sensitive()", () => {
             e: s.string().sensitive().optional(),
             f: s.string().sensitive().nullable(),
             g: s.string().sensitive().deserialize(value => String(value)),
+            h: s.string().sensitive().from("h_column"),
+            i: s.number().sensitive().serialize(value => value),
         }).compile();
 
-        expect(schema.sensitiveProperties.map(property => property.id).sort()).toEqual(["a", "b", "c", "d", "e", "f", "g"]);
+        expect(schema.sensitiveProperties.map(property => property.id).sort()).toEqual(["a", "b", "c", "d", "e", "f", "g", "h", "i"]);
+        expect(schema.properties.find(property => property.id === "h")?.from).toBe("h_column");
     });
 
     it("is marked by a transform that declares it", () => {
@@ -123,6 +126,14 @@ describe("redactEntity", () => {
         expect(redactEntity(people(), "p1")).toBe("p1");
         expect(redactEntity(people(), null)).toBeNull();
         expect(redactEntity(people(), [row])).toEqual([row]);
+    });
+
+    it("leaves a function or an array as it is, even with a key named like a sensitive property", () => {
+        const fn = Object.assign(() => 1, { ssn: "123" });
+        const list = Object.assign(["a"], { ssn: "123" });
+
+        expect(redactEntity(people(), fn)).toBe(fn);
+        expect(redactEntity(people(), list)).toBe(list);
     });
 
     it("leaves a nested path alone when its parent is not an object", () => {

@@ -25,7 +25,7 @@ const hidePath = (record: UnknownRecord, [name, ...rest]: string[]): UnknownReco
  * returned as it is.
  */
 export const redactEntity = <TEntity extends {}, TValue>(schema: { sensitiveProperties: readonly PropertyInfo<TEntity>[] }, row: TValue): TValue | UnknownRecord => {
-    if (schema.sensitiveProperties.length === 0 || isRecord(row) === false) {
+    if (isRecord(row) === false) {
         return row;
     }
 

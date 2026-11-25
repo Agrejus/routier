@@ -13,7 +13,6 @@ import { SchemaTag } from "./SchemaTag";
 
 export class SchemaSensitive<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;
-    private _schemaSensitive = true;
 
     constructor(current: SchemaBase<T, TModifiers>) {
         super(current);

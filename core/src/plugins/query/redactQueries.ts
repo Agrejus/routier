@@ -2,14 +2,12 @@ import { REDACTED, touchesSensitive } from "../../expressions/redact";
 import { ExecutedQuery } from "./explain";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
 
-export const HIDDEN_QUERY_TEXT = "[hidden: this query filters on a sensitive property]";
-
 export const filtersSensitive = <T>(options: QueryOptionsCollection<T>): boolean =>
     options.get("filter").some(item => touchesSensitive(item.option.value.expression));
 
 const redactQuery = (query: ExecutedQuery): ExecutedQuery =>
     query.parameters == null
-        ? { text: HIDDEN_QUERY_TEXT }
+        ? { text: "[hidden: this query filters on a sensitive property]" }
         : { text: query.text, parameters: query.parameters.map(() => REDACTED) };
 
 /**

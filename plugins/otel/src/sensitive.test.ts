@@ -1,7 +1,6 @@
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { uuidv4 } from "@routier/core";
 import type { DbPluginQueryEvent, ITranslatedValue } from "@routier/core/plugins";
-import { HIDDEN_QUERY_TEXT } from "@routier/core/plugins";
 import type { PluginEventCallbackResult } from "@routier/core/results";
 import { s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
@@ -40,7 +39,7 @@ const queryText = async (run: (store: Store) => Promise<unknown>) => {
 
 describe("db.query.text", () => {
     it("is hidden for a query that filters on a sensitive property", async () => {
-        expect(await queryText(store => store.people.where(p => p.ssn === "123-45-6789").toArrayAsync())).toBe(HIDDEN_QUERY_TEXT);
+        expect(await queryText(store => store.people.where(p => p.ssn === "123-45-6789").toArrayAsync())).toBe("[hidden: this query filters on a sensitive property]");
     });
 
     it("is kept for a query that does not", async () => {

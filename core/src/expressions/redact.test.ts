@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { s } from "../schema";
 import { QueryOptionsCollection } from "../plugins/query/QueryOptionsCollection";
-import { filtersSensitive, HIDDEN_QUERY_TEXT, redactExecutedQueries } from "../plugins/query/redactQueries";
+import { filtersSensitive, redactExecutedQueries } from "../plugins/query/redactQueries";
 import { toExpression } from "./parser";
 import { REDACTED, redactExpression, touchesSensitive } from "./redact";
 import { ComparatorExpression, Expression, OperatorExpression } from "./types";
@@ -49,6 +49,19 @@ describe("redactExpression", () => {
         const redacted = json(parse(p => p.ssn.toLowerCase() === "abc"));
 
         expect(redacted).not.toContain("abc");
+    });
+
+    it("hides the arguments of a call on a sensitive property", () => {
+        const redacted = json(parse(p => p.ssn.substring(4, 9) === "x"));
+
+        expect(redacted).not.toContain('"value":4');
+        expect(redacted).not.toContain('"value":9');
+    });
+
+    it("hides a pattern tested against a sensitive property", () => {
+        const redacted = json(parse(p => /^999/.test(p.ssn)));
+
+        expect(redacted).not.toContain("999");
     });
 
     it("returns an expression with nothing sensitive as it is", () => {
@@ -111,7 +124,7 @@ describe("redactExecutedQueries", () => {
     it("hides parameters, and the text of a statement that has none", () => {
         expect(redactExecutedQueries(queries, true)).toEqual([
             { text: "SELECT * FROM people WHERE ssn = ?", parameters: [REDACTED, REDACTED] },
-            { text: HIDDEN_QUERY_TEXT },
+            { text: "[hidden: this query filters on a sensitive property]" },
         ]);
     });
 
