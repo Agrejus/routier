@@ -18,6 +18,7 @@ import { UnknownRecord, uuidv4 } from "@routier/core/utilities";
 import { MongoCollection, MongoDriver, MongoFindOptions, MongoUpdate } from "./driver";
 import { MqlFilter, canRenderInMql, toMql, toStoragePath } from "./mql";
 import { MongoTranslator } from "./MongoTranslator";
+import { findReport } from "./report";
 import { assertMongoSchema } from "./schemaRules";
 import { stampUpdatedEtags, withEtag } from "./etags";
 
@@ -197,9 +198,7 @@ export class MongoDbPlugin implements IDbPlugin {
                 // Mongo has no statement text; the filter and options ARE the query, so they are
                 // what gets reported. After the read, not before — RetryDbPlugin re-invokes with
                 // the same event.
-                event.executedQueries.push({
-                    text: `db.${schema.collectionName}.find(${JSON.stringify(filter)}, ${JSON.stringify(find)})`
-                });
+                event.executedQueries.push(findReport(schema.collectionName, filter, find));
 
                 done(PluginEventResult.success(event.id, translator.translate(documents)));
             })

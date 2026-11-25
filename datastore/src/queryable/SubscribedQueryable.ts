@@ -12,6 +12,7 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
         this.take = this.take.bind(this);
+        this.cursor = this.cursor.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
     }
@@ -38,6 +39,16 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
 
     take(amount: number) {
         this.setTakeQueryOption(amount);
+        return this.create(SubscribedQueryable<Root, Shape, U>);
+    }
+
+    /**
+     * Continues the sorted order after `lastRow`, the last row of the previous page. Pass `null` for the first page.
+     *
+     * Write it after the sorts and before `take`. Rows that tie on every sort are ordered by the key, so no row is skipped or repeated between pages.
+     */
+    cursor(lastRow: Shape | null) {
+        this.setCursorQueryOption(lastRow);
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }
 

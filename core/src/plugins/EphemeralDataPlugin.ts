@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, memoryJoinQuery, memoryReadQuery, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -59,6 +59,7 @@ const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
 
     return { value: right.value as IdType };
 }
+
 
 export abstract class EphemeralDataPlugin implements IDbPlugin {
 
@@ -384,11 +385,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 innerRows.push(cloneRecord(record));
             }
 
-            const narrowing = outerKeys == null ? "full scan" : `narrowed by ${outerKeys.size} outer ${outerKeys.size === 1 ? "key" : "keys"}`;
-
-            event.executedQueries.push({
-                text: `${innerSchema.collectionName}: scanned ${innerRows.length} in-memory ${innerRows.length === 1 ? "record" : "records"} for join inner side (${narrowing})`
-            });
+            event.executedQueries.push(memoryJoinQuery(innerSchema.collectionName, keyColumn, innerRows.length, outerKeys?.size ?? null));
 
             done({ ok: "success", innerSide: { innerSchema, innerRows } });
         });
@@ -526,13 +523,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  *
                  * Before the inner side, to match execution order.
                  */
-                const described = describeFilters(executedFilterValues(operation.options));
-
-                event.executedQueries.push({
-                    text: `${operation.schema.collectionName}: scanned ${cloned.length} in-memory ` +
-                        `${cloned.length === 1 ? "record" : "records"}, filter ${described.text}`,
-                    parameters: described.parameters.length > 0 ? described.parameters : undefined
-                });
+                event.executedQueries.push(memoryReadQuery(operation.schema.collectionName, describeFilters(executedFilterValues(operation.options)), cloned.length));
 
                 const joinOption = operation.options.getLast("join");
                 const outerKeys = joinOption == null || joinOption.reason !== "executed"

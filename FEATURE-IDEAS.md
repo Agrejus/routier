@@ -110,14 +110,20 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 - **Optional extra:** an `s.crdt()` property type backed by Yjs or Automerge for collaborative
   text.
 
-### 8. Keyset (cursor) pagination
+### 8. Keyset (cursor) pagination - DONE
+
+Shipped as `.cursor(lastRow)`, with `.cursor(null)` for the first page. It adds a sort by the key
+and a filter built by hand, which the database runs when every sort is a non-null property.
 
 - **Current state:** the pagination docs mention no cursors, only skip/take.
 - **Proposal:** `.after(cursor)` over a sorted query, pushed down as
   `WHERE (sort, id) > (?, ?)`. It stays stable under inserts and is O(1) at depth. It is also
   the right primitive for infinite-scroll live queries.
 
-### 9. First-class upsert and bulk set operations
+### 9. First-class upsert and bulk set operations - DONE (docs)
+
+Resolved as a recipe: a collection class that extends `Collection` adds `upsertAsync`, and
+`where(...).removeAsync()` already removes by query. See "Extending Collections".
 
 - **Current state:** upsert appears only in `specs/known-defects.md`, as inconsistent behavior:
   `MemoryPlugin` treats add as upsert, while Dexie's `bulkAdd` throws.
@@ -126,7 +132,10 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 - **Also:** query-scoped `updateWhere` and `removeWhere`, so a bulk change doesn't need to load
   rows first.
 
-### 10. Undo/redo
+### 10. Undo/redo - DONE (docs)
+
+Resolved as a recipe: a collection class keeps undo and redo stacks. `.audit()` covers history
+that lasts across reloads. See "Extending Collections".
 
 - **Current state:** the change tracker already records previous values.
 - **Proposal:** a `store.history.undo()` stack over committed saves. It is nearly free, demos

@@ -89,7 +89,7 @@ Every value that is not sensitive is shown as it is. Treat the drawer like a deb
 
 ![The Routier devtools Queries tab: a recorded query on SQLite with the SQL statement and bound parameters it sent.](/devtools/queries.png)
 
-The **Queries** tab records every query your app runs while the tab is open, across every mounted store, newest first, keeping the last 200. Each entry shows the collection and its store, whether it is a live query, how many options ran in the database and how many in memory, and how long it took. Select one to see the plan `.explain()` would give you: each execution step, the options in it, the statements the plugin sent with their parameters, and why anything ran in memory.
+The **Queries** tab records every query your app runs while the tab is open, across every mounted store, newest first, keeping the last 200. Each entry shows the collection and its store, whether it is a live query, how many options ran in the database and how many in memory, and how long it took. Select one to see the plan `.explain()` would give you: each execution step, the options in it, the statements the plugin sent with their parameters, and why anything ran in memory. Each statement is in the backend's own language, such as SQL, a Dexie chain, a PouchDB call or a JavaScript filter, with a label naming the language and a note about the read, such as `an IndexedDB index seek`.
 
 Recording only runs while the tab is open. Devtools' own queries are never recorded.
 

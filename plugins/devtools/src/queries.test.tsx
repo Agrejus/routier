@@ -421,6 +421,30 @@ describe("the query detail", () => {
     expect(detail(devtools).querySelectorAll(".statement-parameters")).toHaveLength(0);
   });
 
+  it("labels a statement with its language and note, and shows no code for a note alone", async () => {
+    const [first] = explanation.executionSteps;
+    const labelled = {
+      ...first,
+      executedQueries: [
+        { text: "posts.filter(x => x.likes > ?)", parameters: [5], language: "javascript", note: "scanned 3 in-memory records" },
+        { text: "", note: "cache hit: no query ran" },
+        { text: "SELECT 1", language: "sql" },
+      ],
+    };
+    const devtools = await openDetail(query({ explanation: { ...explanation, executionSteps: [labelled] } }));
+
+    expect([...detail(devtools).querySelectorAll(".statement-note")].map((note) => note.textContent)).toEqual([
+      "javascriptscanned 3 in-memory records",
+      "cache hit: no query ran",
+      "sql",
+    ]);
+    expect([...detail(devtools).querySelectorAll(".statement-language")].map((language) => language.textContent)).toEqual(["javascript", "sql"]);
+    expect([...detail(devtools).querySelectorAll(".statement-text")].map((statement) => statement.textContent)).toEqual([
+      "posts.filter(x => x.likes > ?)",
+      "SELECT 1",
+    ]);
+  });
+
   it("shows why a query failed", async () => {
     const devtools = await openDetail(query({ outcome: { status: "error", error: new Error("disk full") } }));
 

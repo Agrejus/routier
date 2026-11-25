@@ -1,4 +1,5 @@
 import { DataTranslator } from "./DataTranslator";
+import { compareBySortKeys, sortKeysEndingWith } from "./sortKeys";
 import { QueryOption } from "../query/types";
 import { nearestBy } from "../query/similarity";
 import { executeJoin, JoinInnerSide, toEntityShape } from "../query/join";
@@ -194,28 +195,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
     override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
         if (Array.isArray(data)) {
-            const direction = option.value.direction === "asc" ? 1 : -1;
-
-            // Relational comparison instead of subtraction — subtraction is NaN
-            // for strings, which leaves the array unsorted
-            data.sort((x, y) => {
-                const a = option.value.selector(x) as any;
-                const b = option.value.selector(y) as any;
-
-                if (a === b) {
-                    return 0;
-                }
-
-                if (a == null) {
-                    return -1 * direction;
-                }
-
-                if (b == null) {
-                    return 1 * direction;
-                }
-
-                return (a < b ? -1 : 1) * direction;
-            });
+            data.sort(compareBySortKeys(sortKeysEndingWith(this.sortKeys, option)));
         }
 
         return data as TResult;
