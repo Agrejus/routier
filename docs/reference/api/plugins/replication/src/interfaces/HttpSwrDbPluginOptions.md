@@ -6,13 +6,13 @@
 
 # Interface: HttpSwrDbPluginOptions
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L68)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L70)
 
 SWR-specific options for HttpSwrDbPlugin.
 
 ## Extends
 
-- [`HttpConnectionOptions`](HttpConnectionOptions.md).[`SyncHooks`](SyncHooks.md)\<[`SwrRequestError`](../type-aliases/SwrRequestError.md)\>
+- [`HttpConnectionOptions`](HttpConnectionOptions.md).[`SyncHooks`](SyncHooks.md)\<[`SwrRequestError`](../type-aliases/SwrRequestError.md)\>.[`ConflictHandlingOptions`](../type-aliases/ConflictHandlingOptions.md)
 
 ## Properties
 
@@ -172,7 +172,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:68](https://github.com/Agre
 
 > `optional` **autoSync**: `boolean` \| [`AutoSyncOptions`](AutoSyncOptions.md)
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:77](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L77)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:79](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L79)
 
 Background sync policy. Omit for the automatic default (retry on a backing-off timer plus
 an immediate flush when connectivity returns), pass an object to tune it, or pass `false`
@@ -187,7 +187,7 @@ every ack. It only means nothing replays them until you ask.
 
 > `optional` **postOnPersist**: `boolean`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:94](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L94)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:96](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L96)
 
 Whether a save also POSTs immediately, or is left to the batching flush. Default true.
 
@@ -210,7 +210,7 @@ With `autoSync: false` as well, nothing is delivered until you call `syncNow()`.
 
 > `optional` **maxAgeMs**: `number`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:96](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L96)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:98](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L98)
 
 Max time (ms) to consider cache fresh; after this, the next read triggers a background revalidate. Default 60_000.
 
@@ -220,7 +220,7 @@ Max time (ms) to consider cache fresh; after this, the next read triggers a back
 
 > `optional` **conditionalRevalidation**: `boolean`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:97](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L97)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:99](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L99)
 
 ***
 
@@ -228,7 +228,7 @@ Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:97](https://github.com/A
 
 > `optional` **translatePersistResponse**: (`schema`, `responseBody`) => `unknown`[]
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:103](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L103)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:105](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L105)
 
 Reconciles the POST response into the SWR store: given the response body, return the
 canonical entities the server echoed (or null to skip). Fixes server-assigned ids and
@@ -254,7 +254,7 @@ timestamps drifting from the optimistic local copy.
 
 > **unsyncedQueueStore**: `IDbPlugin`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:111](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L111)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:113](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L113)
 
 IDbPlugin to use for persisting the unsynced queue (e.g. same as swrStore). No datastore required.
 The queue is stored via query/bulkPersist in a reserved collection (_routier_unsynced).
@@ -264,11 +264,77 @@ refresh with unsynced items intact, or a MemoryPlugin to accept losing them.
 
 ***
 
+### resolveConflict?
+
+> `optional` **resolveConflict**: [`ConflictResolver`](../type-aliases/ConflictResolver.md)
+
+Defined in: [plugins/replication/src/conflictSettler.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/conflictSettler.ts#L14)
+
+Decides a write the server refused as a conflict. Without it, a conflict is handled like any other failed write.
+
+#### Inherited from
+
+`ConflictHandlingOptions.resolveConflict`
+
+***
+
+### isConflict()?
+
+> `optional` **isConflict**: (`failure`) => `boolean`
+
+Defined in: [plugins/replication/src/conflictSettler.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/conflictSettler.ts#L16)
+
+Whether a failed write is a conflict. Default: an HTTP 409.
+
+#### Parameters
+
+##### failure
+
+[`FailureKind`](../type-aliases/FailureKind.md)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+`ConflictHandlingOptions.isConflict`
+
+***
+
+### fetchRemote()?
+
+> `optional` **fetchRemote**: (`collectionName`, `local`) => `Promise`\<`UnknownRecord`\>
+
+Defined in: [plugins/replication/src/conflictSettler.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/conflictSettler.ts#L18)
+
+Reads the server's current row when the conflict response does not carry it.
+
+#### Parameters
+
+##### collectionName
+
+`string`
+
+##### local
+
+`UnknownRecord`
+
+#### Returns
+
+`Promise`\<`UnknownRecord`\>
+
+#### Inherited from
+
+`ConflictHandlingOptions.fetchRemote`
+
+***
+
 ### onEvent()?
 
 > `optional` **onEvent**: (`event`) => `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L59)
+Defined in: [plugins/replication/src/syncHooks.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L65)
 
 #### Parameters
 
@@ -290,7 +356,7 @@ Defined in: [plugins/replication/src/syncHooks.ts:59](https://github.com/Agrejus
 
 > `optional` **onError**: (`error`) => `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L60)
+Defined in: [plugins/replication/src/syncHooks.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L66)
 
 #### Parameters
 

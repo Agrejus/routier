@@ -6,19 +6,15 @@
 
 # Function: describeFilters()
 
-> **describeFilters**(`filters`): [`ParameterisedQuery`](../type-aliases/ParameterisedQuery.md)
+> **describeFilters**(`filters`, `row`): [`DescribedFilters`](../type-aliases/DescribedFilters.md)
 
-Defined in: [core/src/plugins/query/describeFilter.ts:213](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/describeFilter.ts#L213)
+Defined in: [core/src/plugins/query/describeFilter.ts:214](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/describeFilter.ts#L214)
 
-Every filter on a query, as one description.
+Every filter on a query, as the body of one JavaScript predicate over `row`.
 
-Filters accumulate — `.where(a).where(b)` is `a && b` — so they are reported as one predicate
-rather than several, which is how the caller thinks of them and how a SQL plugin renders them
-into one `WHERE`. Parameters run left to right across the whole thing, matching the text.
-
-A filter that could not be parsed falls back to its source. Mixing the two is deliberate: one
-unparsable filter does not make the others unreadable, and seeing which one it was is the
-point.
+Filters accumulate, so `.where(a).where(b)` is `a && b`. Parameters run left to right across
+the whole body, matching the text. A filter that could not be parsed is written as a call of
+the caller's own function on `row`, and the reason goes in `notes`.
 
 ## Parameters
 
@@ -26,6 +22,10 @@ point.
 
 readonly `object`[]
 
+### row
+
+`string` = `"x"`
+
 ## Returns
 
-[`ParameterisedQuery`](../type-aliases/ParameterisedQuery.md)
+[`DescribedFilters`](../type-aliases/DescribedFilters.md)

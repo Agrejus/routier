@@ -8,7 +8,7 @@
 
 > **InferMappedType**\<`T`\> = `T` *extends* [`SchemaBase`](../classes/SchemaBase.md)\<infer K, infer \_\_\> ? [`InferType`](InferType.md)\<`K`\> : `InferCompiledSchema`\<`T`\>
 
-Defined in: [core/src/schema/types.ts:392](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L392)
+Defined in: [core/src/schema/types.ts:401](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L401)
 
 ## Type Parameters
 

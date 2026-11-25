@@ -6,7 +6,7 @@
 
 # Class: SchemaBoolean\<T, TModifiers\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:15](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L15)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:16](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L16)
 
 ## Extends
 
@@ -28,7 +28,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:15](https://github.
 
 > **new SchemaBoolean**\<`T`, `TModifiers`\>(`entity?`, `literals?`): `SchemaBoolean`\<`T`, `TModifiers`\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:77](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L77)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:76](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L76)
 
 #### Parameters
 
@@ -213,7 +213,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/
 
 > **dimensions**: `number` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L37)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L34)
 
 How many numbers a vector holds. `null` for every other type.
 
@@ -224,12 +224,21 @@ exactly this reason — the copy constructor below carries it — and a dimensio
 to travel with it, or an optional vector reaches a backend as a vector of unknown width
 and cannot be given a column.
 
-`innerSchema` is the cautionary example: it lives on `SchemaArray` alone, so a modified
-array arrives with no element type and clones through the slow path.
-
 #### Inherited from
 
 [`SchemaBase`](SchemaBase.md).[`dimensions`](SchemaBase.md#dimensions)
+
+***
+
+### innerSchema?
+
+> `optional` **innerSchema**: [`SchemaBase`](SchemaBase.md)\<`unknown`, [`SchemaModifiers`](../type-aliases/SchemaModifiers.md)\>
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L35)
+
+#### Inherited from
+
+[`SchemaBase`](SchemaBase.md).[`innerSchema`](SchemaBase.md#innerschema)
 
 ***
 
@@ -237,7 +246,7 @@ array arrives with no element type and clones through the slow path.
 
 > **maxLength**: `number` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:52](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L52)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:50](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L50)
 
 The longest string the property is declared to hold. `null` for every other type, and
 for a string that declares nothing.
@@ -262,7 +271,7 @@ knowing a bound.
 
 > **isSearchable**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:64](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L64)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:62](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L62)
 
 Whether this string may be tokenised into a full-text search index.
 
@@ -280,11 +289,23 @@ gains one more modifier.
 
 ***
 
+### isSensitive
+
+> **isSensitive**: `boolean` = `false`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:63](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L63)
+
+#### Inherited from
+
+[`SchemaBase`](SchemaBase.md).[`isSensitive`](SchemaBase.md#issensitive)
+
+***
+
 ### foreignKeyDefinition
 
 > **foreignKeyDefinition**: [`ForeignKey`](../type-aliases/ForeignKey.md)\<`unknown`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L66)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L65)
 
 #### Inherited from
 
@@ -296,7 +317,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/
 
 > **tags**: `string`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L67)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L66)
 
 #### Inherited from
 
@@ -308,7 +329,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/
 
 > **injected**: `any` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L68)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L67)
 
 #### Inherited from
 
@@ -320,7 +341,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/
 
 > **defaultValue**: [`DefaultValue`](../type-aliases/DefaultValue.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L69)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L68)
 
 #### Inherited from
 
@@ -332,7 +353,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/
 
 > **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L70)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L69)
 
 #### Inherited from
 
@@ -344,7 +365,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/
 
 > **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L71)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L70)
 
 #### Inherited from
 
@@ -356,7 +377,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/
 
 > **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L73)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L72)
 
 #### Inherited from
 
@@ -368,7 +389,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/
 
 > `readonly` **literals**: `T`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L75)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:74](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L74)
 
 #### Inherited from
 
@@ -380,7 +401,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:75](https://github.com/
 
 > **instance**: `T`
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:17](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L17)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L18)
 
 #### Overrides
 
@@ -392,7 +413,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:17](https://github.
 
 > **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md) = `SchemaTypes.Boolean`
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L18)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L19)
 
 #### Overrides
 
@@ -404,7 +425,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:18](https://github.
 
 > **from**(`propertyName`): [`SchemaFrom`](SchemaFrom.md)\<`T`, `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L21)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L22)
 
 #### Parameters
 
@@ -422,7 +443,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:21](https://github.
 
 > **optional**(): [`SchemaOptional`](SchemaOptional.md)\<`T`, `"optional"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:25](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L25)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:26](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L26)
 
 #### Returns
 
@@ -434,7 +455,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:25](https://github.
 
 > **nullable**(): [`SchemaNullable`](SchemaNullable.md)\<`T`, `"nullable"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L29)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L30)
 
 #### Returns
 
@@ -446,7 +467,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:29](https://github.
 
 > **default**\<`I`\>(`value`, `injected?`): [`SchemaDefault`](SchemaDefault.md)\<`T`, `I`, `"default"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L33)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L34)
 
 #### Type Parameters
 
@@ -474,7 +495,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:33](https://github.
 
 > **readonly**(): [`SchemaReadonly`](SchemaReadonly.md)\<`T`, `"readonly"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L37)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:38](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L38)
 
 #### Returns
 
@@ -486,7 +507,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:37](https://github.
 
 > **deserialize**(`deserializer`): [`SchemaDeserialize`](SchemaDeserialize.md)\<`T`, `"deserialize"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:41](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L41)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L42)
 
 #### Parameters
 
@@ -504,7 +525,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:41](https://github.
 
 > **serialize**(`serializer`): [`SchemaSerialize`](SchemaSerialize.md)\<`T`, `"serialize"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L45)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:46](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L46)
 
 #### Parameters
 
@@ -522,7 +543,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:45](https://github.
 
 > **array**(): [`SchemaArray`](SchemaArray.md)\<`SchemaBoolean`\<`T`, `TModifiers`\>, `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L49)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:50](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L50)
 
 #### Returns
 
@@ -534,7 +555,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:49](https://github.
 
 > **index**(...`indexes`): [`SchemaIndex`](SchemaIndex.md)\<`T`, `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L53)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L54)
 
 #### Parameters
 
@@ -552,7 +573,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:53](https://github.
 
 > **distinct**(): [`SchemaDistinct`](SchemaDistinct.md)\<`T`, `"distinct"` \| `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L57)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L58)
 
 #### Returns
 
@@ -564,7 +585,7 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:57](https://github.
 
 > **tag**(...`tags`): [`SchemaTag`](SchemaTag.md)\<`T`, `TModifiers`\>
 
-Defined in: [core/src/schema/property/types/SchemaBoolean.ts:61](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L61)
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:62](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L62)
 
 #### Parameters
 
@@ -575,3 +596,15 @@ Defined in: [core/src/schema/property/types/SchemaBoolean.ts:61](https://github.
 #### Returns
 
 [`SchemaTag`](SchemaTag.md)\<`T`, `TModifiers`\>
+
+***
+
+### sensitive()
+
+> **sensitive**(): [`SchemaSensitive`](SchemaSensitive.md)\<`T`, `TModifiers`\>
+
+Defined in: [core/src/schema/property/types/SchemaBoolean.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/types/SchemaBoolean.ts#L66)
+
+#### Returns
+
+[`SchemaSensitive`](SchemaSensitive.md)\<`T`, `TModifiers`\>

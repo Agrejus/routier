@@ -120,7 +120,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/otel/src/OtelDbPlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L51)
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L53)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -152,7 +152,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/otel/src/OtelDbPlugin.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L65)
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:67](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L67)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

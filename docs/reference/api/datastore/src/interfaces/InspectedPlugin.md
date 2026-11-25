@@ -6,7 +6,7 @@
 
 # Interface: InspectedPlugin
 
-Defined in: [datastore/src/inspection/types.ts:49](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L49)
+Defined in: [datastore/src/inspection/types.ts:51](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L51)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [datastore/src/inspection/types.ts:49](https://github.com/Agrejus/ro
 
 > `readonly` **name**: `string`
 
-Defined in: [datastore/src/inspection/types.ts:50](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L50)
+Defined in: [datastore/src/inspection/types.ts:52](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L52)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [datastore/src/inspection/types.ts:50](https://github.com/Agrejus/ro
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [datastore/src/inspection/types.ts:51](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L51)
+Defined in: [datastore/src/inspection/types.ts:53](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L53)

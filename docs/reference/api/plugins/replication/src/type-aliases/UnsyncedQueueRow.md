@@ -8,4 +8,4 @@
 
 > **UnsyncedQueueRow** = `InferType`\<*typeof* `unsyncedQueueSchema`\>
 
-Defined in: [plugins/replication/src/UnsyncedQueue.ts:98](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/UnsyncedQueue.ts#L98)
+Defined in: [plugins/replication/src/UnsyncedQueue.ts:107](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/UnsyncedQueue.ts#L107)

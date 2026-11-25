@@ -32,13 +32,23 @@ Defined in: [datastore/src/inspection/types.ts:27](https://github.com/Agrejus/ro
 
 Defined in: [datastore/src/inspection/types.ts:28](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L28)
 
+***
+
+### sensitivePaths
+
+> `readonly` **sensitivePaths**: readonly `string`[]
+
+Defined in: [datastore/src/inspection/types.ts:30](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L30)
+
+The dotted paths of the properties declared `.sensitive()`, which a viewer should hide until asked.
+
 ## Methods
 
 ### count()
 
 > **count**(): `Promise`\<`number`\>
 
-Defined in: [datastore/src/inspection/types.ts:29](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L29)
+Defined in: [datastore/src/inspection/types.ts:31](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L31)
 
 #### Returns
 
@@ -50,7 +60,7 @@ Defined in: [datastore/src/inspection/types.ts:29](https://github.com/Agrejus/ro
 
 > **keyOf**(`row`): `string`
 
-Defined in: [datastore/src/inspection/types.ts:30](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L30)
+Defined in: [datastore/src/inspection/types.ts:32](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L32)
 
 #### Parameters
 
@@ -68,7 +78,7 @@ Defined in: [datastore/src/inspection/types.ts:30](https://github.com/Agrejus/ro
 
 > **watchCount**(`onCount`): [`StopWatching`](../type-aliases/StopWatching.md)
 
-Defined in: [datastore/src/inspection/types.ts:31](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L31)
+Defined in: [datastore/src/inspection/types.ts:33](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L33)
 
 #### Parameters
 
@@ -86,7 +96,7 @@ Defined in: [datastore/src/inspection/types.ts:31](https://github.com/Agrejus/ro
 
 > **watchPage**(`page`, `onRows`): [`StopWatching`](../type-aliases/StopWatching.md)
 
-Defined in: [datastore/src/inspection/types.ts:32](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L32)
+Defined in: [datastore/src/inspection/types.ts:34](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L34)
 
 #### Parameters
 

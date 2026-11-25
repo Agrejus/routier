@@ -8,7 +8,7 @@
 
 > **formatExplanation**(`explanation`): `string`
 
-Defined in: [core/src/plugins/query/formatExplanation.ts:242](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/formatExplanation.ts#L242)
+Defined in: [core/src/plugins/query/formatExplanation.ts:246](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/formatExplanation.ts#L246)
 
 Renders an explanation for a terminal.
 

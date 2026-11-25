@@ -6,9 +6,7 @@
 
 # Class: HttpSwrDbPlugin
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:147](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L147)
-
-Single-schema task for bulk persist: POST payload + data needed to finalize on success.
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:165](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L165)
 
 ## Implements
 
@@ -20,7 +18,7 @@ Single-schema task for bulk persist: POST payload + data needed to finalize on s
 
 > **new HttpSwrDbPlugin**(`swrStore`, `options`): `HttpSwrDbPlugin`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:212](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L212)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:232](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L232)
 
 #### Parameters
 
@@ -44,7 +42,7 @@ Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:212](https://github.com/
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:208](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L208)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:228](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L228)
 
 The REMOTE's name. The swr store is a local cache of it, so two instances backed by one
 server are one database for subscription purposes — which is what makes their stores
@@ -64,7 +62,7 @@ see each other's writes.
 
 > **syncNow**(): `Promise`\<`DeliveryOutcome`\>
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:254](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L254)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:287](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L287)
 
 Flushes everything unsynced now, instead of waiting for the background timer.
 
@@ -83,7 +81,7 @@ server that tracks them applies a double-send once.
 
 > **pendingCount**(): `Promise`\<`number`\>
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:262](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L262)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:295](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L295)
 
 How many changes are waiting to reach the server. 0 means everything acked locally has
 also been confirmed remotely. Dead-lettered changes are not counted — see `deadLetters()`.
@@ -96,13 +94,13 @@ also been confirmed remotely. Dead-lettered changes are not counted — see `dea
 
 ### deadLetters()
 
-> **deadLetters**(): `Promise`\<`InferCompiledSchema`\<\{ `id`: `SchemaIdentity`\<`string`, `"identity"` \| `"key"`\>; `collectionName`: `SchemaString`\<`string`, `never`\>; `recordIds`: `SchemaString`\<`string`, `never`\>; `changeKind`: `SchemaOptional`\<`string`, `"optional"`\>; `entityJson`: `SchemaString`\<`string`, `never`\>; `revision`: `SchemaOptional`\<`string`, `"optional"`\>; `opId`: `SchemaOptional`\<`string`, `"optional"`\>; `status`: `SchemaOptional`\<`string`, `"optional"`\>; `attempts`: `SchemaOptional`\<`number`, `"optional"`\>; `seq`: `SchemaOptional`\<`number`, `"optional"`\>; `payloadJson`: `SchemaOptional`\<`string`, `"optional"`\>; \}\>[]\>
+> **deadLetters**(): `Promise`\<`InferCompiledSchema`\<\{ `id`: `SchemaIdentity`\<`string`, `"identity"` \| `"key"`\>; `collectionName`: `SchemaString`\<`string`, `never`\>; `recordIds`: `SchemaString`\<`string`, `never`\>; `changeKind`: `SchemaOptional`\<`string`, `"optional"`\>; `entityJson`: `SchemaString`\<`string`, `never`\>; `revision`: `SchemaOptional`\<`string`, `"optional"`\>; `opId`: `SchemaOptional`\<`string`, `"optional"`\>; `status`: `SchemaOptional`\<`string`, `"optional"`\>; `attempts`: `SchemaOptional`\<`number`, `"optional"`\>; `seq`: `SchemaOptional`\<`number`, `"optional"`\>; `payloadJson`: `SchemaOptional`\<`string`, `"optional"`\>; `baseJson`: `SchemaOptional`\<`string`, `"optional"`\>; \}\>[]\>
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:266](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L266)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:299](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L299)
 
 #### Returns
 
-`Promise`\<`InferCompiledSchema`\<\{ `id`: `SchemaIdentity`\<`string`, `"identity"` \| `"key"`\>; `collectionName`: `SchemaString`\<`string`, `never`\>; `recordIds`: `SchemaString`\<`string`, `never`\>; `changeKind`: `SchemaOptional`\<`string`, `"optional"`\>; `entityJson`: `SchemaString`\<`string`, `never`\>; `revision`: `SchemaOptional`\<`string`, `"optional"`\>; `opId`: `SchemaOptional`\<`string`, `"optional"`\>; `status`: `SchemaOptional`\<`string`, `"optional"`\>; `attempts`: `SchemaOptional`\<`number`, `"optional"`\>; `seq`: `SchemaOptional`\<`number`, `"optional"`\>; `payloadJson`: `SchemaOptional`\<`string`, `"optional"`\>; \}\>[]\>
+`Promise`\<`InferCompiledSchema`\<\{ `id`: `SchemaIdentity`\<`string`, `"identity"` \| `"key"`\>; `collectionName`: `SchemaString`\<`string`, `never`\>; `recordIds`: `SchemaString`\<`string`, `never`\>; `changeKind`: `SchemaOptional`\<`string`, `"optional"`\>; `entityJson`: `SchemaString`\<`string`, `never`\>; `revision`: `SchemaOptional`\<`string`, `"optional"`\>; `opId`: `SchemaOptional`\<`string`, `"optional"`\>; `status`: `SchemaOptional`\<`string`, `"optional"`\>; `attempts`: `SchemaOptional`\<`number`, `"optional"`\>; `seq`: `SchemaOptional`\<`number`, `"optional"`\>; `payloadJson`: `SchemaOptional`\<`string`, `"optional"`\>; `baseJson`: `SchemaOptional`\<`string`, `"optional"`\>; \}\>[]\>
 
 ***
 
@@ -110,7 +108,7 @@ Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:266](https://github.com/
 
 > **retryDeadLetters**(): `Promise`\<\{ `revived`: `number`; `outcome`: `DeliveryOutcome`; \}\>
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:276](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L276)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:309](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L309)
 
 Puts dead-lettered changes back in the queue and flushes. Returns how many were revived.
 
@@ -127,7 +125,7 @@ rolled back. Never automatic: the server already said this cannot work.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:287](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L287)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:320](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L320)
 
 Executes a query operation on the database.
 
@@ -169,7 +167,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:317](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L317)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:350](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L350)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -201,7 +199,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:328](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L328)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:361](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L361)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

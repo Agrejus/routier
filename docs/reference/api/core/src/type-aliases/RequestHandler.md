@@ -8,7 +8,7 @@
 
 > **RequestHandler**\<`TContext`\> = (`request`, `context`) => `Promise`\<[`SerializedResponse`](SerializedResponse.md)\>
 
-Defined in: [core/src/plugins/wire/handler.ts:130](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L130)
+Defined in: [core/src/plugins/wire/handler.ts:131](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L131)
 
 ## Type Parameters
 

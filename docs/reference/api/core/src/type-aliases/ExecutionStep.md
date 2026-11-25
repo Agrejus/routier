@@ -8,7 +8,7 @@
 
 > **ExecutionStep** = \{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"database"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `executedQueries`: [`ExecutedQuery`](ExecutedQuery.md)[]; `executedQueriesUnsupported?`: `string`; \} \| \{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"memory"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `reason?`: [`StepReason`](StepReason.md); `explanation?`: `string`; \}
 
-Defined in: [core/src/plugins/query/explain.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L73)
+Defined in: [core/src/plugins/query/explain.ts:78](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L78)
 
 One run of options in one place.
 

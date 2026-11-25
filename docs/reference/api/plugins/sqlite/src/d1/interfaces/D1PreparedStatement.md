@@ -6,7 +6,7 @@
 
 # Interface: D1PreparedStatement
 
-Defined in: [plugins/sqlite/src/d1.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L56)
+Defined in: [plugins/sqlite/src/d1.ts:57](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L57)
 
 A bound, ready-to-run statement.
 
@@ -20,7 +20,7 @@ satisfies it without a cast.
 
 > **bind**(...`values`): `D1PreparedStatement`
 
-Defined in: [plugins/sqlite/src/d1.ts:58](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L58)
+Defined in: [plugins/sqlite/src/d1.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L59)
 
 Binds positional parameters. Returns a new statement; D1's is not mutating.
 
@@ -40,7 +40,7 @@ Binds positional parameters. Returns a new statement; D1's is not mutating.
 
 > **all**\<`T`\>(): `Promise`\<\{ `results`: `T`[]; \}\>
 
-Defined in: [plugins/sqlite/src/d1.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L60)
+Defined in: [plugins/sqlite/src/d1.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L61)
 
 Runs the statement and returns its rows, including a `RETURNING` clause's.
 

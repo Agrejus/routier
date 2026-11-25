@@ -27,6 +27,10 @@
 
 ## Type Aliases
 
+- [Conflict](type-aliases/Conflict.md)
+- [ConflictResolution](type-aliases/ConflictResolution.md)
+- [ConflictResolver](type-aliases/ConflictResolver.md)
+- [FieldMergeOptions](type-aliases/FieldMergeOptions.md)
 - [SyncOutcome](type-aliases/SyncOutcome.md)
 - [HttpTransportDbPluginOptions](type-aliases/HttpTransportDbPluginOptions.md)
 - [OptimisticUpdatesDbPluginOptions](type-aliases/OptimisticUpdatesDbPluginOptions.md)
@@ -39,11 +43,13 @@
 - [PluginSyncEngineOptions](type-aliases/PluginSyncEngineOptions.md)
 - [QueuedChangeKind](type-aliases/QueuedChangeKind.md)
 - [UnsyncedQueueRow](type-aliases/UnsyncedQueueRow.md)
+- [ConflictHandlingOptions](type-aliases/ConflictHandlingOptions.md)
 - [RetryOptions](type-aliases/RetryOptions.md)
 - [RejectedChange](type-aliases/RejectedChange.md)
 - [ReadEvent](type-aliases/ReadEvent.md)
 - [ChangesRejectedEvent](type-aliases/ChangesRejectedEvent.md)
 - [SyncedEvent](type-aliases/SyncedEvent.md)
+- [ConflictResolvedEvent](type-aliases/ConflictResolvedEvent.md)
 - [SyncEvent](type-aliases/SyncEvent.md)
 - [ResponseHeaders](type-aliases/ResponseHeaders.md)
 - [FailureKind](type-aliases/FailureKind.md)
@@ -57,6 +63,13 @@
 - [SwrRequestError](type-aliases/SwrRequestError.md)
 - [OptimisticRequestError](type-aliases/OptimisticRequestError.md)
 - [AnyRequestError](type-aliases/AnyRequestError.md)
+
+## Variables
+
+- [serverWins](variables/serverWins.md)
+- [clientWins](variables/clientWins.md)
+- [fieldMerge](variables/fieldMerge.md)
+- [byCollection](variables/byCollection.md)
 
 ## Functions
 

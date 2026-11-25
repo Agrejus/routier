@@ -8,7 +8,7 @@
 
 > `const` **MEMORY\_EXECUTION\_EXPLANATIONS**: `Record`\<[`MemoryExecutionReason`](../type-aliases/MemoryExecutionReason.md), `string`\>
 
-Defined in: [core/src/plugins/query/explain.ts:11](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L11)
+Defined in: [core/src/plugins/query/explain.ts:12](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L12)
 
 One sentence per reason code, written for someone meeting pushdown for the first time.
 

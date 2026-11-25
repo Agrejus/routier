@@ -8,7 +8,7 @@
 
 > **QueryExplanationSummary** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L102)
+Defined in: [core/src/plugins/query/explain.ts:107](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L107)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/query/explain.ts:102](https://github.com/Agrejus/r
 
 > **database**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:103](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L103)
+Defined in: [core/src/plugins/query/explain.ts:108](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L108)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/query/explain.ts:103](https://github.com/Agrejus/r
 
 > **memory**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:104](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L104)
+Defined in: [core/src/plugins/query/explain.ts:109](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L109)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/query/explain.ts:104](https://github.com/Agrejus/r
 
 > **reasons**: [`StepReason`](StepReason.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:106](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L106)
+Defined in: [core/src/plugins/query/explain.ts:111](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L111)
 
 Deduped, in first-seen order. Empty when the whole query pushed down.
 
@@ -42,4 +42,4 @@ Deduped, in first-seen order. Empty when the whole query pushed down.
 
 > **explanation**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:107](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L107)
+Defined in: [core/src/plugins/query/explain.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L112)

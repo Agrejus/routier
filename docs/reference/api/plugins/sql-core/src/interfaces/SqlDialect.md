@@ -440,11 +440,33 @@ The parameter `arrayContainsExpression` expects, from the value the caller compa
 
 ***
 
+### listSource()
+
+> **listSource**(`values`, `placeholder`): [`ListSource`](../type-aliases/ListSource.md)
+
+Defined in: [plugins/sql-core/src/sql.ts:132](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L132)
+
+#### Parameters
+
+##### values
+
+readonly `unknown`[]
+
+##### placeholder
+
+() => `string`
+
+#### Returns
+
+[`ListSource`](../type-aliases/ListSource.md)
+
+***
+
 ### jsonPathExpression()
 
 > **jsonPathExpression**(`rootColumn`, `path`, `leafType`): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:147](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L147)
+Defined in: [plugins/sql-core/src/sql.ts:148](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L148)
 
 Reads a value out of a JSON column so a nested property can be filtered on.
 

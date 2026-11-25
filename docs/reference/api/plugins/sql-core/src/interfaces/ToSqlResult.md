@@ -6,7 +6,7 @@
 
 # Interface: ToSqlResult
 
-Defined in: [plugins/sql-core/src/sql.ts:1037](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1037)
+Defined in: [plugins/sql-core/src/sql.ts:1059](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1059)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/sql-core/src/sql.ts:1037](https://github.com/Agrejus/routie
 
 > **where**: `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:1038](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1038)
+Defined in: [plugins/sql-core/src/sql.ts:1060](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1060)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [plugins/sql-core/src/sql.ts:1038](https://github.com/Agrejus/routie
 
 > **params**: `unknown`[]
 
-Defined in: [plugins/sql-core/src/sql.ts:1039](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1039)
+Defined in: [plugins/sql-core/src/sql.ts:1061](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1061)

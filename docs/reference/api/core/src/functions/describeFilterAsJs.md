@@ -6,7 +6,7 @@
 
 # Function: describeFilterAsJs()
 
-> **describeFilterAsJs**(`expression`): [`ParameterisedQuery`](../type-aliases/ParameterisedQuery.md)
+> **describeFilterAsJs**(`expression`, `row`): [`ParameterisedQuery`](../type-aliases/ParameterisedQuery.md)
 
 Defined in: [core/src/plugins/query/describeFilter.ts:64](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/describeFilter.ts#L64)
 
@@ -22,6 +22,10 @@ makes both come out as `?` the way SQL treats them.
 ### expression
 
 [`Expression`](../classes/Expression.md)
+
+### row
+
+`string` = `"x"`
 
 ## Returns
 

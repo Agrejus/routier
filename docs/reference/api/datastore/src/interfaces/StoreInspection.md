@@ -6,7 +6,7 @@
 
 # Interface: StoreInspection
 
-Defined in: [datastore/src/inspection/types.ts:54](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L54)
+Defined in: [datastore/src/inspection/types.ts:56](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L56)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [datastore/src/inspection/types.ts:54](https://github.com/Agrejus/ro
 
 > `readonly` **plugin**: [`InspectedPlugin`](InspectedPlugin.md)
 
-Defined in: [datastore/src/inspection/types.ts:55](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L55)
+Defined in: [datastore/src/inspection/types.ts:57](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L57)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [datastore/src/inspection/types.ts:55](https://github.com/Agrejus/ro
 
 > `readonly` **collections**: readonly [`InspectedCollection`](InspectedCollection.md)[]
 
-Defined in: [datastore/src/inspection/types.ts:56](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L56)
+Defined in: [datastore/src/inspection/types.ts:58](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L58)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [datastore/src/inspection/types.ts:56](https://github.com/Agrejus/ro
 
 > `readonly` **disposed**: `AbortSignal`
 
-Defined in: [datastore/src/inspection/types.ts:57](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L57)
+Defined in: [datastore/src/inspection/types.ts:59](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L59)
 
 ## Methods
 
@@ -38,7 +38,7 @@ Defined in: [datastore/src/inspection/types.ts:57](https://github.com/Agrejus/ro
 
 > **watchQueries**(`onQuery`): [`StopWatching`](../type-aliases/StopWatching.md)
 
-Defined in: [datastore/src/inspection/types.ts:58](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L58)
+Defined in: [datastore/src/inspection/types.ts:60](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L60)
 
 #### Parameters
 

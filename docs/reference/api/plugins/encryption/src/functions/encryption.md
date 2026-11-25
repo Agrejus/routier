@@ -30,9 +30,9 @@ carries it; your database plugin never learns that encryption happened. Nothing 
 privileged — a transform of your own with the same two functions works identically, and
 that is the point.
 
-`stores` and `comparable` are set here rather than by the caller: a ciphertext is always
-text, and only the deterministic mode can be compared. A schema that uses this says
-`x.transform(cipher)` and nothing else.
+`stores`, `comparable` and `sensitive` are set here rather than by the caller: a ciphertext
+is always text, only the deterministic mode can be compared, and an encrypted value stays out
+of Routier's logs. A schema that uses this says `x.transform(cipher)` and nothing else.
 
 ## Parameters
 

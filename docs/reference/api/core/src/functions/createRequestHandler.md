@@ -8,7 +8,7 @@
 
 > **createRequestHandler**\<`TContext`\>(`options`): [`RequestHandler`](../type-aliases/RequestHandler.md)\<`TContext`\>
 
-Defined in: [core/src/plugins/wire/handler.ts:158](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L158)
+Defined in: [core/src/plugins/wire/handler.ts:159](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L159)
 
 ## Type Parameters
 

@@ -8,7 +8,7 @@
 
 > **RejectAction** = `object`
 
-Defined in: [plugins/replication/src/syncHooks.ts:41](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L41)
+Defined in: [plugins/replication/src/syncHooks.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L47)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: [plugins/replication/src/syncHooks.ts:41](https://github.com/Agrejus
 
 > **reject**(): `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:41](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L41)
+Defined in: [plugins/replication/src/syncHooks.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L47)
 
 #### Returns
 
