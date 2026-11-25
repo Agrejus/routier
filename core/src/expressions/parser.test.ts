@@ -18,6 +18,7 @@ const localeOn = (expression: unknown): unknown =>
 
 describe('Parser', () => {
     const mockSchema = {
+        sensitiveProperties: [],
         properties: [
             {
                 getAssignmentPath: () => 'name',
