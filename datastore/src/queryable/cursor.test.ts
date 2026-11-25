@@ -4,6 +4,7 @@ import type { InferType } from "@routier/core/schema";
 import type { QueryExplanation } from "@routier/core/plugins";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { uuidv4 } from "@routier/core";
+import { CacheDbPlugin } from "@routier/core/plugins";
 import { DataStore } from "../DataStore";
 
 const postSchema = s.define("cursor_posts", {
@@ -134,6 +135,18 @@ describe("cursor", () => {
         const store = await seeded();
 
         expect(() => store.posts.sort(p => p.id).take(1).cursor(null)).toThrow(".cursor() must come before .take()");
+    });
+
+    it("pages behind a cache, which keys each page by the row it continues from", async () => {
+        const store = new Store(new CacheDbPlugin(new MemoryPlugin(`cursor-cache-${uuidv4()}`)));
+
+        stores.push(store);
+        await store.posts.addAsync(...POSTS);
+        await store.saveChangesAsync();
+
+        const result = await pages(cursor => store.posts.sort(p => p.id).cursor(cursor).take(2).toArrayAsync());
+
+        expect(result).toEqual([["a", "b"], ["c", "d"], ["e", "f"]]);
     });
 
     it("returns nothing after the last row", async () => {

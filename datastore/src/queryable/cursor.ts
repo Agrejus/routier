@@ -132,8 +132,8 @@ export const addCursor = <T extends {}>(options: QueryOptionsCollection<T>, keys
     const isPast = compareBySortKeys(sorts);
 
     options.add("filter", {
-        filter: (row: T) => isPast(row, cursor) > 0,
+        filter: ([row]: [T, {}]) => isPast(row, cursor) > 0,
         expression: cursorExpression(sorts.map(sort => sort.value), cursor),
-        params: undefined,
+        params: { after: sorts.map(sort => sort.value.selector(cursor)) },
     });
 };
