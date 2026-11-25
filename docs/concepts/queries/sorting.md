@@ -28,10 +28,12 @@ Sort data in descending order:
 
 ## Multiple Sort Criteria
 
-Chain multiple sort operations for complex sorting:
+Chain sorts to order by more than one value. The first sort decides the order, and each later sort only orders rows that tie on every sort before it:
 
 
 <<< @/_snippets/code/from-docs/concepts/queries/sorting/block-1.ts
+
+Every backend orders chained sorts the same way. A SQL backend runs them as one `ORDER BY`, with the columns in the order you wrote the sorts. Two dates with the same time are a tie, so the next sort decides between them.
 
 
 ## Combined with Filtering

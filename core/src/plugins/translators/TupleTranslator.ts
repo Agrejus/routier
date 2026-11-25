@@ -1,4 +1,5 @@
 import { DataTranslator } from "./DataTranslator";
+import { compareBySortKeys, sortKeysEndingWith } from "./sortKeys";
 import { QueryOption } from "../query/types";
 import { assertIsArray } from "../../assertions";
 import { ParamsFilter } from "../../expressions";
@@ -50,33 +51,9 @@ export class TupleTranslator<TRoot extends {}, TShape> extends DataTranslator<TR
 
     override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
-        if (Array.isArray(data) === false) {
-            return data as TResult;
+        if (Array.isArray(data)) {
+            data.sort(compareBySortKeys(sortKeysEndingWith(this.sortKeys, option)));
         }
-
-        const direction = option.value.direction === "asc" ? 1 : -1;
-
-        // Relational comparison rather than subtraction, and nulls first ascending — the same
-        // ordering `JsonTranslator.sort` produces, so a sort means the same thing on either
-        // side of a join.
-        data.sort((x, y) => {
-            const a = option.value.selector(x) as any;
-            const b = option.value.selector(y) as any;
-
-            if (a === b) {
-                return 0;
-            }
-
-            if (a == null) {
-                return -1 * direction;
-            }
-
-            if (b == null) {
-                return 1 * direction;
-            }
-
-            return (a < b ? -1 : 1) * direction;
-        });
 
         return data as TResult;
     }

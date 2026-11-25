@@ -553,13 +553,8 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         // rows everywhere is the promise this feature makes. An exact ordering still avoids
         // shipping every row to the client and scoring it in JS, which is the bulk of the win.
         currentQuery += ` ORDER BY "${column}" <=> $${params.length} LIMIT ${count}`;
-    } else {
-        // Build ORDER BY
-        for (const op of sortOps) {
-            const sortColumn = referencedColumn(op.value.property, op.value.propertyName, getDialect('postgresql'));
-            const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-            currentQuery += ` ORDER BY ${sortColumn} ${sortDir}`;
-        }
+    } else if (sortOps.length > 0) {
+        currentQuery += ` ORDER BY ${sortOps.map(op => `${referencedColumn(op.value.property, op.value.propertyName, getDialect('postgresql'))} ${op.value.direction === 'asc' ? 'ASC' : 'DESC'}`).join(', ')}`;
     }
 
     // Handle skip/take

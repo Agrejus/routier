@@ -6,3 +6,5 @@ export * from './types';
 export * from './TranslatedArrayValue';
 export * from './TranslatedGroupValue';
 export * from './TranslatedSingleValue';
+export { compareBySortKeys } from './sortKeys';
+

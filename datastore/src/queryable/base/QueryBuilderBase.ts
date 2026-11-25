@@ -3,6 +3,7 @@ import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, parseSelector, SelectedValue, toExpression } from "@routier/core/expressions";
 import { SchemaTypes } from "@routier/core/schema";
 import { ComposerDependencies, RequestContext } from "../../collections/types";
+import { addCursor } from "../cursor";
 
 export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends ComposerDependencies<TRoot>> {
 
@@ -215,6 +216,10 @@ export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends C
         }
 
         this.request.queryOptions.add("nearest", { selector: selector as any, propertyName, property, reads, isDirectProperty, vector, count });
+    }
+
+    protected setCursorQueryOption(cursor: TShape | null) {
+        addCursor(this.request.queryOptions, this.dependencies.schema.idProperties, cursor as (TShape & TRoot) | null);
     }
 
     protected setSkipQueryOption(amount: number) {
