@@ -8,6 +8,7 @@ export * from './SchemaNullable';
 export * from './SchemaOptional';
 export * from './SchemaReadonly';
 export * from './SchemaSearchable';
+export * from './SchemaSensitive';
 export * from './SchemaSerialize';
 export * from './SchemaTracked';
 export * from './SchemaFrom';

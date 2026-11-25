@@ -7,6 +7,7 @@ import { PageContent } from "./PageContent";
 import { Pager } from "./Pager";
 import { lastPageStart } from "./paging";
 import { RowDetail } from "./RowDetail";
+import { maskPage } from "./maskSensitive";
 
 interface CollectionPanelProps {
   collection: InspectedCollection;
@@ -22,8 +23,10 @@ function selectedRow(page: LivePage, collection: InspectedCollection, key: strin
 export function CollectionPanel({ collection, count, scheduler }: CollectionPanelProps) {
   const [skip, setSkip] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState(false);
   const pageStart = count.status === "success" ? Math.min(skip, lastPageStart(count.value)) : skip;
-  const page = useLivePage(collection, pageStart, scheduler);
+  const livePage = useLivePage(collection, pageStart, scheduler);
+  const page = revealed ? livePage : maskPage(livePage, collection.sensitivePaths);
   const pageIsFull = page.status === "success" && page.value.length === PAGE_SIZE;
   const detail = selectedKey === null ? undefined : selectedRow(page, collection, selectedKey);
   const changePage = (next: number) => {
@@ -37,6 +40,11 @@ export function CollectionPanel({ collection, count, scheduler }: CollectionPane
         <div class="panel-heading">
           <h2 class="panel-title">{collection.name}</h2>
           {collection.kind === "view" && <span class="kind-badge">view</span>}
+          {collection.sensitivePaths.length > 0 && (
+            <button type="button" class="reveal-toggle" aria-pressed={revealed} onClick={() => setRevealed(!revealed)}>
+              {revealed ? "Hide sensitive values" : "Show sensitive values"}
+            </button>
+          )}
         </div>
         <Pager skip={pageStart} count={count} pageIsFull={pageIsFull} onPage={changePage} />
       </header>

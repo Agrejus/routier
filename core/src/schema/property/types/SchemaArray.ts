@@ -8,6 +8,7 @@ import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaTag } from "../modifiers/SchemaTag";
+import { SchemaSensitive } from "../modifiers/SchemaSensitive";
 
 export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T[], TModifiers> {
 
@@ -52,5 +53,7 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
         return new SchemaTag<T[], TModifiers>(tags, this);
     }
 
-
+    sensitive() {
+        return new SchemaSensitive<T[], TModifiers>(this);
+    }
 }

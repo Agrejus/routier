@@ -11,6 +11,7 @@ import { SchemaReadonly } from "../modifiers/SchemaReadonly";
 import { SchemaSerialize } from "../modifiers/SchemaSerialize";
 import { SchemaTag } from "../modifiers/SchemaTag";
 import { SchemaArray } from "./SchemaArray";
+import { SchemaSensitive } from "../modifiers/SchemaSensitive";
 
 export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
@@ -61,5 +62,7 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
         return new SchemaTag<T, TModifiers>(tags, this);
     }
 
-
+    sensitive() {
+        return new SchemaSensitive<T, TModifiers>(this);
+    }
 }

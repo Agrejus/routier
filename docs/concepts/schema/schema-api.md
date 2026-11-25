@@ -60,6 +60,7 @@ The fluent TypeScript API is authoritative: an unavailable combination does not 
 | `.identity()` | ✓ | ✓ | — | — | ✓ | — | — | — |
 | `.foreignKey(schema, property)` | ✓ | ✓ | — | — | — | — | — | — |
 | `.searchable()` | ✓ | — | — | — | — | — | — | — |
+| `.sensitive()` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
 | `.tag(...tags)` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `.constrain<T>()` | ✓ | ✓ | — | — | — | — | — | — |
 
@@ -78,6 +79,7 @@ Modifier wrappers intentionally expose only valid next steps, so modifier order 
 - `.index(...names)` declares backend indexes. Reusing a name across properties declares a compound index.
 - `.distinct()` declares uniqueness; enforcement is plugin-dependent.
 - `.searchable()` marks a string as eligible for a collection declared with `.fullTextSearch()`.
+- `.sensitive()` hides the value in Routier's logs, `.explain()`, telemetry and devtools. It does not encrypt or change what is stored.
 - `.tag(...tags)` adds property metadata for application/plugin inspection. It is unrelated to `collection.tag(value)`, which tags a pending operation.
 - `.constrain<T>()` narrows TypeScript's type without runtime validation.
 

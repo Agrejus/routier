@@ -145,6 +145,7 @@
         "_snippets/code/from-docs/concepts/schema/modifiers/index-example.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/nullable-example.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/readonly-example.ts",
+        "_snippets/code/from-docs/concepts/schema/modifiers/sensitive-example.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/tracked-example.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/type-combination-example.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/type-safety-example.ts",

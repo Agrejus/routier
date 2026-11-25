@@ -41,6 +41,10 @@ Use the resulting schema with memory, SQLite, PostgreSQL, MySQL, MongoDB, Dexie,
 
 Deterministic searchable encryption reveals which rows share a value and how often it occurs. Use it only for high-cardinality lookup values such as email. Do not use it for salary, diagnosis, status, or other low-cardinality/sensitive values where frequency is revealing.
 
+## Sensitive by default
+
+An encrypted property is also [sensitive](/concepts/schema/modifiers/README#sensitive). Routier hides its value in logs, `.explain()`, OpenTelemetry and devtools, so you don't need to add `.sensitive()`.
+
 ## Keys and rotation
 
 Secrets must contain at least 32 bytes of entropy. Every envelope records the key ID. Rotate by adding a new active key while retaining old keys until all old rows have been rewritten:

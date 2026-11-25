@@ -391,6 +391,9 @@ function applyRoutierMetadata(
     if (property.isDistinct && !routierMeta.isDistinct) {
         routierMeta.isDistinct = true;
     }
+    if (property.isSensitive && !routierMeta.isSensitive) {
+        routierMeta.isSensitive = true;
+    }
     if (property.isSearchable && !routierMeta.isSearchable) {
         routierMeta.isSearchable = true;
     }
@@ -643,6 +646,9 @@ export function rehydrateSchemaFromJsonSchema(
         }
         if (routierPropMeta?.isDistinct && typeof schemaBuilder.distinct === 'function') {
             schemaBuilder = schemaBuilder.distinct();
+        }
+        if (routierPropMeta?.isSensitive && typeof schemaBuilder.sensitive === 'function') {
+            schemaBuilder = schemaBuilder.sensitive();
         }
         // Before `.optional()` below, which is safe because `isSearchable` survives a wrapping
         // modifier — see `SchemaBase.isSearchable`. Rebuilding a schema that silently dropped

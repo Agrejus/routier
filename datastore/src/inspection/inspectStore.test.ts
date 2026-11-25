@@ -112,7 +112,7 @@ describe("DataStore.inspect() collections", () => {
     it("exposes only names, kinds, and read operations on each collection", () => {
         const [products] = createStore().inspect().collections;
 
-        expect(Object.keys(products).sort()).toEqual(["count", "keyOf", "kind", "name", "schemaId", "watchCount", "watchPage"]);
+        expect(Object.keys(products).sort()).toEqual(["count", "keyOf", "kind", "name", "schemaId", "sensitivePaths", "watchCount", "watchPage"]);
     });
 
     it("names the plugin and database the store runs on", () => {

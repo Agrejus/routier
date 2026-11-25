@@ -1,7 +1,7 @@
 import { context, SpanStatusCode, trace, type Span, type Tracer } from "@opentelemetry/api";
 import { BulkPersistResult } from "@routier/core/collections";
 import {
-    DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue,
+    DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, filtersSensitive, IDbPlugin, ITranslatedValue, redactExecutedQueries,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "@routier/core/results";
 
@@ -39,7 +39,9 @@ export class OtelDbPlugin implements IDbPlugin {
             this.plugin.query<TRoot, TShape>(event, result => {
                 this.finish(span, result, () => {
                     if (event.executedQueries.length > 0) {
-                        span.setAttribute("db.query.text", event.executedQueries.map(q => q.text).join("; "));
+                        const queries = redactExecutedQueries(event.executedQueries, filtersSensitive(event.operation.options));
+
+                        span.setAttribute("db.query.text", queries.map(q => q.text).join("; "));
                     }
                 });
 

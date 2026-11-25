@@ -71,6 +71,17 @@ export const dataStyles = `
   font-size: 12.5px;
 }
 
+.reveal-toggle {
+  padding: 0 8px;
+  border: 1px solid var(--rd-raised);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--rd-muted);
+  font-size: 10.5px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
 .kind-badge {
   padding: 0 7px;
   border-radius: 999px;

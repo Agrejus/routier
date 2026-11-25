@@ -1,6 +1,7 @@
 import { Expression } from "../../expressions/types";
 import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
+import { redactExpression } from "../../expressions/redact";
 
 /**
  * One sentence per reason code, written for someone meeting pushdown for the first time.
@@ -142,7 +143,7 @@ const detailOf = (option: QueryOption<any, any>): Record<string, unknown> | unde
         }
 
         try {
-            return { expression: Expression.toJson(value.expression) };
+            return { expression: Expression.toJson(redactExpression(value.expression)) };
         } catch {
             // `valueToJson` rejects a value no wire can carry. Reporting the rest of the
             // explanation beats taking the diagnostic down with the query it describes.
