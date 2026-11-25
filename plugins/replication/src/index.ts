@@ -21,6 +21,7 @@ export type { HttpSwrDbPluginOptions, AutoSyncOptions, SyncOutcome } from './Htt
 export type {
     AnyRequestError,
     ChangesRejectedEvent,
+    ConflictResolvedEvent,
     DeferAction,
     DoneAction,
     FailureDetails,
@@ -39,6 +40,8 @@ export type {
     UseCachedAction,
 } from './syncHooks';
 export { createRetry, defaultSync, type RetryOptions } from './retry';
+export type { ConflictHandlingOptions } from './conflictSettler';
+export { byCollection, clientWins, fieldMerge, serverWins, type Conflict, type ConflictResolution, type ConflictResolver, type FieldMergeOptions } from '@routier/core/plugins';
 export type { QueuedChangeKind, UnsyncedQueueRow } from './UnsyncedQueue';
 
 /**

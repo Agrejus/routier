@@ -65,7 +65,7 @@ function etagField(schema: CompiledSchema<Record<string, unknown>>, row: Record<
  */
 export function mergeUpdatePayloads(
     older: Record<string, unknown> | null,
-    newer: Record<string, unknown> | null
+    newer: Record<string, unknown> | null | undefined
 ): Record<string, unknown> | null {
     if (older == null || newer == null) {
         return null;

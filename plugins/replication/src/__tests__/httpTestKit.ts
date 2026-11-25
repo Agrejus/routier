@@ -135,6 +135,8 @@ export const queueMirrorSchema = s
         status: s.string().optional(),
         attempts: s.number().optional(),
         seq: s.number().optional(),
+        payloadJson: s.string().optional(),
+        baseJson: s.string().optional(),
     })
     .compile();
 
@@ -149,6 +151,8 @@ export interface QueueMirrorRow {
     status?: string;
     attempts?: number;
     seq?: number;
+    payloadJson?: string;
+    baseJson?: string;
 }
 
 /** A minimal two-column collection used by most tests. */

@@ -270,7 +270,7 @@ describe('e2e over node:http', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 1, failed: 0, rejected: 0 });
+        expect(outcome).toEqual({ sent: 1, failed: 0, rejected: 0, resolved: 0 });
         expect(server.rows('e2eWidgets')).toEqual([{ id: 'w3', name: 'Offline [server]' }]);
         expect(await readQueueRows(queueStore)).toHaveLength(0);
     });

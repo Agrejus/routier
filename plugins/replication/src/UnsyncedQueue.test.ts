@@ -6,6 +6,7 @@ import { uuid } from '@routier/core/utilities';
 import { UnsyncedQueue } from './UnsyncedQueue';
 import type { QueuedChange } from './UnsyncedQueue';
 import { readQueueRows, testSchema, writeQueueRows } from './__tests__/httpTestKit';
+import { logger } from '@routier/core/utilities';
 
 /**
  * The queue is where the "no acked write is lost" promise actually lives, so its failure paths
@@ -423,6 +424,83 @@ describe('UnsyncedQueue against a real store', () => {
         await expect(queue.removeRows(payload.rows)).resolves.toBeUndefined();
 
         expect(await readQueueRows(queueStore)).toHaveLength(0);
+    });
+});
+
+describe('UnsyncedQueue merge bases', () => {
+    let queueStore: MemoryPlugin;
+    let queue: UnsyncedQueue;
+
+    beforeEach(() => {
+        queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
+        queue = new UnsyncedQueue(queueStore);
+    });
+
+    const unitBase = async () => (await queue.getUnsyncedEntitiesForFlush('swrHardening')).units.map(unit => unit.base);
+
+    it('gives a queued update the base it was given', async () => {
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: { id: 'a', name: 'B' }, base: { name: 'A' } }]);
+
+        expect(await unitBase()).toEqual([{ name: 'A' }]);
+    });
+
+    it('keeps the earliest value of a field edited twice, even by a whole-row update', async () => {
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: null, base: { name: 'A' } }]);
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'C' }, payload: null, base: { name: 'B' } }]);
+
+        expect(await unitBase()).toEqual([{ name: 'A' }]);
+    });
+
+    it('keeps the earliest base when an add rides in the same call as the update', async () => {
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: { id: 'a', name: 'B' }, base: { name: 'A' } }]);
+        await queue.addMany(testSchema as never, [
+            { kind: 'add', entity: { id: 'z', name: 'Z' } },
+            { kind: 'update', entity: { id: 'a', name: 'C' }, payload: { id: 'a', name: 'C' }, base: { name: 'B' } },
+        ]);
+
+        expect((await queue.getUnsyncedEntitiesForFlush('swrHardening')).units.find(unit => unit.kind === 'update')?.base).toEqual({ name: 'A' });
+    });
+
+    it('stores no base for an add', async () => {
+        await queue.addMany(testSchema as never, [{ kind: 'add', entity: { id: 'a', name: 'A' } }]);
+
+        expect((await readQueueRows(queueStore)).map(row => row.baseJson)).toEqual([undefined]);
+        expect(await unitBase()).toEqual([{}]);
+    });
+
+    it('reads the queued updates only to enqueue an update', async () => {
+        const updatesByRowId = jest.spyOn(UnsyncedQueue.prototype as never, 'updatesByRowId');
+
+        await queue.addMany(testSchema as never, [{ kind: 'add', entity: { id: 'a', name: 'A' } }]);
+        expect(updatesByRowId).not.toHaveBeenCalled();
+
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: null }]);
+        expect(updatesByRowId).not.toHaveBeenCalled();
+
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: null, base: { name: 'A' } }]);
+        expect(updatesByRowId).toHaveBeenCalledTimes(1);
+
+        jest.restoreAllMocks();
+    });
+
+    it('warns and merges without a base when a stored base is not JSON', async () => {
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+        await writeQueueRows(queueStore, [{ id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'update', entityJson: '{"id":"a","name":"B"}', baseJson: '{not json' }]);
+
+        expect(await unitBase()).toEqual([{}]);
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse baseJson'), { rowId: '1' });
+        warn.mockRestore();
+    });
+
+    it('does not warn about a row that carries no base', async () => {
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+        await writeQueueRows(queueStore, [{ id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'add', entityJson: '{"id":"a","name":"A"}' }]);
+        await unitBase();
+
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
     });
 });
 

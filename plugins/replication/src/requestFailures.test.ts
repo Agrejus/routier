@@ -38,6 +38,22 @@ describe('runWithOnError', () => {
         expect(await run(failingWith(), undefined)).toEqual({ outcome: 'success', value: 'rows' });
     });
 
+    it('settles a failure isConflict accepts as a conflict, without asking onError', async () => {
+        const onError = jest.fn();
+        const error = http(409);
+        const settled = await runWithOnError({ attempt: failingWith(error), context: readContext, onError, actions, unhandled: endWithDone, isConflict: failure => statusOf(failure) === 409 });
+
+        expect(settled).toEqual({ outcome: 'conflict', error });
+        expect(onError).not.toHaveBeenCalled();
+    });
+
+    it('hands a failure isConflict refuses to onError as usual', async () => {
+        const error = http(503);
+        const settled = await runWithOnError({ attempt: failingWith(error), context: readContext, onError: undefined, actions, unhandled: endWithDone, isConflict: () => false });
+
+        expect(settled).toEqual({ outcome: 'done', error });
+    });
+
     it('settles with the unhandled ending when there is no onError', async () => {
         const error = http(503);
 

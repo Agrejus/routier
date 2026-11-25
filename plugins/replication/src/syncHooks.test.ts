@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { logger } from '@routier/core/utilities';
 import { emitEvent, rejectedChangesOf, type SyncEvent } from './syncHooks';
 
-const synced: SyncEvent = { type: 'synced', sent: 1, failed: 0, rejected: 0 };
+const synced: SyncEvent = { type: 'synced', sent: 1, failed: 0, rejected: 0, resolved: 0 };
 
 describe('emitEvent', () => {
     afterEach(() => {

@@ -100,7 +100,11 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
   `OptimisticUpdatesDbPlugin` on the client, with guides for Next.js, Nuxt and SvelteKit.
 - **Why it matters:** "does it work with Next App Router?" is an early evaluation question.
 
-### 7. Conflict resolution strategies
+### 7. Conflict resolution strategies - DONE
+
+Shipped as `resolveConflict` on `HttpSwrDbPlugin`, with the contract and the built-ins
+(`serverWins`, `clientWins`, `fieldMerge`, `byCollection`) in core so other sync paths can reuse them.
+The outbox keeps each update's values before the edit as the merge base.
 
 - **Current state:** `docs/guides/local-first-apps.md` says "Routier does not provide an
   automatic CRDT or business-level merge policy."

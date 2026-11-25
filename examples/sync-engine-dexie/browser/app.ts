@@ -77,7 +77,7 @@ function buildStore(): ProductStore {
             onError: (error) => (error.operation === 'read' ? error.useCached() : retryOnce(error)),
             onEvent: (event) => {
                 if (event.type === 'synced') {
-                    lastSync = { sent: event.sent, failed: event.failed, rejected: event.rejected };
+                    lastSync = { sent: event.sent, failed: event.failed, rejected: event.rejected, resolved: event.resolved };
                     if (event.sent > 0) note(`auto-sync replayed ${event.sent} change(s)`);
                     void refresh();
                 }
