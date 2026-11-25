@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { s } from '../../schema';
 import { CallExpression, ComparatorExpression, PropertyExpression, ValueExpression } from '../../expressions';
 import { toExpression } from '../../expressions';
-import { describeFilterAsJs, describeUnparsableFilter, parameter, parameteriseDocument } from './describeFilter';
+import { describeFilterAsJs, describeFilters, describeUnparsableFilter, parameter, parameteriseDocument } from './describeFilter';
 import type { Expression } from '../../expressions';
 
 /**
@@ -28,48 +28,48 @@ describe('describeFilterAsJs', () => {
 
     it('renders a comparison with the value pulled out', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.age > 18)))
-            .toEqual({ text: 'age > ?', parameters: [18] });
+            .toEqual({ text: 'x.age > ?', parameters: [18] });
     });
 
     it('pulls out a value that arrived through params, the same as a literal', () => {
         // The whole point of `?`: a caller cannot tell from the text where the value came from,
         // and neither should a reader comparing two runs of the same query.
         expect(describeFilterAsJs(expressionOf(([x, p]: any) => x.age > p.minimum, { minimum: 21 })))
-            .toEqual({ text: 'age > ?', parameters: [21] });
+            .toEqual({ text: 'x.age > ?', parameters: [21] });
     });
 
     it('keeps parameters in reading order across an && ', () => {
         const described = describeFilterAsJs(expressionOf((x: any) => x.age > 18 && x.name === 'ada'));
 
-        expect(described.text).toBe('(age > ? && name === ?)');
+        expect(described.text).toBe('(x.age > ? && x.name === ?)');
         expect(described.parameters).toEqual([18, 'ada']);
     });
 
     it('renders || as ||', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.age < 5 || x.age > 90)).text)
-            .toBe('(age < ? || age > ?)');
+            .toBe('(x.age < ? || x.age > ?)');
     });
 
     it.each([
-        ['startsWith', (x: any) => x.name.startsWith('a'), 'name.startsWith(?)'],
-        ['endsWith', (x: any) => x.name.endsWith('z'), 'name.endsWith(?)'],
-        ['includes', (x: any) => x.name.includes('d'), 'name.includes(?)'],
+        ['startsWith', (x: any) => x.name.startsWith('a'), 'x.name.startsWith(?)'],
+        ['endsWith', (x: any) => x.name.endsWith('z'), 'x.name.endsWith(?)'],
+        ['includes', (x: any) => x.name.includes('d'), 'x.name.includes(?)'],
     ])('renders %s as the method call it was written as', (_, filter, expected) => {
         expect(describeFilterAsJs(expressionOf(filter)).text).toBe(expected);
     });
 
     it('renders a negated comparison with the opposite operator', () => {
-        expect(describeFilterAsJs(expressionOf((x: any) => x.age !== 18)).text).toBe('age !== ?');
+        expect(describeFilterAsJs(expressionOf((x: any) => x.age !== 18)).text).toBe('x.age !== ?');
     });
 
     it('renders a property transformer as the call that produced it', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.name.length > 3)))
-            .toEqual({ text: 'name.length > ?', parameters: [3] });
+            .toEqual({ text: 'x.name.length > ?', parameters: [3] });
     });
 
     it('renders a casing call on a relational comparator, which the parser used to refuse', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.name.toLowerCase() === 'ada')))
-            .toEqual({ text: 'name.toLowerCase() === ?', parameters: ['ada'] });
+            .toEqual({ text: 'x.name.toLowerCase() === ?', parameters: ['ada'] });
     });
 
     it('says a filter is not parsable rather than inventing a rendering for it', () => {
@@ -78,12 +78,12 @@ describe('describeFilterAsJs', () => {
     });
 
     it.each([
-        ['to-lower-case', 'name.toLowerCase()'],
-        ['length', 'name.length'],
-        ['trim', 'name.trim()'],
-        ['absolute', 'Math.abs(name)'],
-        ['type-of', 'typeof name'],
-        ['to-number', 'Number(name)'],
+        ['to-lower-case', 'x.name.toLowerCase()'],
+        ['length', 'x.name.length'],
+        ['trim', 'x.name.trim()'],
+        ['absolute', 'Math.abs(x.name)'],
+        ['type-of', 'typeof x.name'],
+        ['to-number', 'Number(x.name)'],
     ])('renders the %s call as the JavaScript that produced it', (call, expected) => {
         const expression = new CallExpression({
             call: call as never,
@@ -100,7 +100,7 @@ describe('describeFilterAsJs', () => {
             arguments: [new ValueExpression({ value: 0 }), new ValueExpression({ value: 2 })],
         });
 
-        expect(describeFilterAsJs(expression)).toEqual({ text: 'name.substring(?, ?)', parameters: [0, 2] });
+        expect(describeFilterAsJs(expression)).toEqual({ text: 'x.name.substring(?, ?)', parameters: [0, 2] });
     });
 
     it('renders an arithmetic call with its operator', () => {
@@ -110,7 +110,7 @@ describe('describeFilterAsJs', () => {
             arguments: [new ValueExpression({ value: 1 })],
         });
 
-        expect(describeFilterAsJs(expression)).toEqual({ text: 'age + ?', parameters: [1] });
+        expect(describeFilterAsJs(expression)).toEqual({ text: 'x.age + ?', parameters: [1] });
     });
 
     it('renders a call on both sides of a comparator', () => {
@@ -123,7 +123,7 @@ describe('describeFilterAsJs', () => {
             comparator: 'equals', negated: false, strict: true, left: lower('name'), right: lower('id'),
         }));
 
-        expect(described.text).toBe('name.toLowerCase() === id.toLowerCase()');
+        expect(described.text).toBe('x.name.toLowerCase() === x.id.toLowerCase()');
     });
 
     it('does not call an unrecognised node not-parsable, which would name the wrong problem', () => {
@@ -166,13 +166,35 @@ describe('parameteriseDocument', () => {
     });
 
     it('renders an empty document, which is the match-everything filter', () => {
-        expect(parameteriseDocument({})).toEqual({ text: '{  }', parameters: [] });
+        expect(parameteriseDocument({})).toEqual({ text: '{}', parameters: [] });
     });
 
     /** A value that would otherwise be printed — the reason `parameter` exists. */
     it('keeps a marked null out of the text', () => {
         expect(parameteriseDocument({ deletedAt: parameter(null) }))
             .toEqual({ text: '{ "deletedAt": ? }', parameters: [null] });
+    });
+});
+
+describe('describeFilters', () => {
+
+    it('joins every filter into one predicate body over the row it is given', () => {
+        const filters = [{ expression: expressionOf((x: any) => x.age > 18) }, { expression: expressionOf((x: any) => x.name === 'ada') }];
+
+        expect(describeFilters(filters, 'doc')).toEqual({ text: 'doc.age > ? && doc.name === ?', parameters: [18, 'ada'], notes: [] });
+    });
+
+    it('is empty when there are no filters', () => {
+        expect(describeFilters([])).toEqual({ text: '', parameters: [], notes: [] });
+    });
+
+    it('calls a filter it could not parse, and says why in the notes', () => {
+        const filter = (x: any) => x.name.normalize() === 'a';
+        const described = describeFilters([{ expression: expressionOf((x: any) => x.age > 1) }, { expression: toExpression(schema as never, filter as never, undefined as never), filter }]);
+
+        expect(described.text).toMatch(/^x\.age > \? && \(.*normalize.*\)\(x\)$/);
+        expect(described.parameters).toEqual([1]);
+        expect(described.notes).toEqual([expect.stringContaining('normalize')]);
     });
 });
 
@@ -183,19 +205,22 @@ describe('describeUnparsableFilter', () => {
      * down, and the reason codes say that it happened without showing what it was.
      */
     it('shows the predicate as written, and says why it is being shown', () => {
-        const described = describeUnparsableFilter((x: any) => x.name === outside());
+        const described = describeUnparsableFilter((x: any) => x.name === outside(), 'doc');
 
-        expect(described.text).toContain('x.name === outside()');
-        expect(described.text).toContain('could not be parsed');
-        expect(described.parameters).toEqual([]);
+        expect(described.text).toMatch(/^\(.*x\.name === outside\(\).*\)\(doc\)$/);
+        expect(described.note).toContain('could not be parsed');
     });
 
-    it('does not pretend to have extracted parameters it never understood', () => {
-        expect(describeUnparsableFilter((x: any) => x.age > 1).parameters).toEqual([]);
+    it('says the syntax was unsupported when the parser gave no reason', () => {
+        expect(describeUnparsableFilter((x: any) => x.age > 1).note).toBe('a filter could not be parsed (unsupported syntax), so it ran as JavaScript');
+    });
+
+    it('calls it on x when no row name is given', () => {
+        expect(describeUnparsableFilter((x: any) => x.age > 1).text).toMatch(/\)\(x\)$/);
     });
 
     it('falls back for something that is not a function at all', () => {
-        expect(describeUnparsableFilter(undefined).text).toBe('(not parsable)');
+        expect(describeUnparsableFilter(undefined).text).toBe('true');
     });
 });
 
@@ -207,7 +232,7 @@ describe('a filter the parser refused', () => {
 
         expect(expression.type).toBe('not-parsable');
         expect((expression as any).reason).toContain('normalize');
-        expect(describeUnparsableFilter(filter, (expression as any).reason).text).toContain('normalize');
+        expect(describeUnparsableFilter(filter, 'x', (expression as any).reason).note).toContain('normalize');
     });
 
     it.each([
@@ -225,7 +250,7 @@ describe('a filter the parser refused', () => {
         const expression = toExpression(schema as never, ((x: any) => /^Al/.test(x.name)) as never, undefined as never);
         const { text, parameters } = describeFilterAsJs(expression);
 
-        expect(text).toBe('?.test(name) === ?');
+        expect(text).toBe('?.test(x.name) === ?');
         expect(parameters[0]).toBeInstanceOf(RegExp);
     });
 });

@@ -268,7 +268,7 @@ export class D1DbPlugin implements IDbPlugin {
 
                     const translator = new SqlTranslator(event.operation, { join: true });
 
-                    event.executedQueries.push({ text: sql, parameters: params });
+                    event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
                     done(PluginEventResult.success(event.id, translator.translate(tuples)));
                 })
@@ -325,7 +325,7 @@ export class D1DbPlugin implements IDbPlugin {
             const results = (await this.statement(sql, params).all()).results;
 
             // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
-            event.executedQueries.push({ text: sql, parameters: params });
+            event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
             return results;
         } catch (error) {
@@ -339,7 +339,7 @@ export class D1DbPlugin implements IDbPlugin {
 
             const retried = (await this.statement(sql, params).all()).results;
 
-            event.executedQueries.push({ text: sql, parameters: params });
+            event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
             return retried;
         }

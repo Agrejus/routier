@@ -44,10 +44,30 @@ describe('memory explain', () => {
         const reported = executedQueriesOf(explanation);
 
         expect(reported).toHaveLength(2);
-        expect(reported[0].text).toContain("explain_teams: scanned 2");
-        expect(reported[1].text).toContain("explain_members: scanned 1");
-        expect(reported[1].text).toContain("join inner side");
-        expect(reported[1].text).toContain("narrowed by 2 outer keys");
+        expect(reported[0]).toEqual({ text: "explain_teams", language: "javascript", note: "returned 2 in-memory records" });
+        expect(reported[1]).toEqual({
+            text: "explain_members.filter(x => outerKeys.has(x.teamId))",
+            language: "javascript",
+            note: expect.stringMatching(/^the join's inner side: returned 1 in-memory record, narrowed by \d+ outer keys?$/),
+        });
+
+        await store.destroyAsync();
+    });
+
+    it('reports a full scan of the inner side when there are more outer keys than the threshold', async () => {
+        const store = new ExplainStore(new MemoryPlugin(`explain-${uuidv4()}`), { semiJoinKeyThreshold: 1 });
+
+        const [alpha, beta] = await store.teams.addAsync({ name: "Alpha" }, { name: "Beta" });
+        await store.saveChangesAsync();
+        await store.members.addAsync({ teamId: alpha._id, name: "Ann" }, { teamId: beta._id, name: "Ben" });
+        await store.saveChangesAsync();
+
+        const { explanation } = await store.teams
+            .join(x => x.members, team => team._id, member => member.teamId)
+            .explain()
+            .toArrayAsync();
+
+        expect(executedQueriesOf(explanation)[1]).toEqual({ text: "explain_members", language: "javascript", note: "the join's inner side: returned 2 in-memory records, a full scan" });
 
         await store.destroyAsync();
     });

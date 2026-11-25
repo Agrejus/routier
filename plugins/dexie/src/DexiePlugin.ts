@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema, dexieKey } from "./utils";
 import { stampAddedEtags, stampUpdatedEtags } from "./etags";
+import { dexieQuery } from "./explainQuery";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -47,6 +48,7 @@ export type DexiePluginOptions = {
 };
 
 const countCompatibleOptions: readonly QueryOptionName[] = ["filter", "sort", "count"];
+
 
 export class DexiePlugin implements IDbPlugin, Disposable {
 
@@ -290,19 +292,6 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return merged;
     }
 
-    private getSelectedProperties<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>) {
-
-        const { options } = event.operation;
-
-        const map = options.getLast("map");
-
-        if (map != null) {
-
-            return map.value.fields.map(x => x.property!);
-        }
-
-        return event.operation.schema.properties;
-    }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         // Two ordinary queries through this same path — outer first, so its keys narrow the inner
@@ -397,6 +386,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             translator.pushedDown.take = canPushDownWindow;
             translator.pushedDown.sort = sortSeed != null;
 
+            const windowSteps: string[] = [];
+            const windowParameters: unknown[] = [];
+
             options.forEach(option => {
 
                 // Everything after a reported option runs in the datastore, and a window applied
@@ -408,6 +400,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 if (option.name === "skip") {
                     if (canPushDownWindow) {
                         collections = collections.map(collection => collection.offset(option.value));
+                        windowSteps.push("offset(?)");
+                        windowParameters.push(option.value);
                     }
                     return
                 }
@@ -415,19 +409,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 if (option.name === "take") {
                     if (canPushDownWindow) {
                         collections = collections.map(collection => collection.limit(option.value));
-                    }
-                    return
-                }
-
-                if (option.name === "distinct") {
-
-                    const selectedProperties = this.getSelectedProperties(event);
-
-                    // distinct only works on properties that have an index,
-                    // convert database operation to memory operation
-                    if (selectedProperties.every(x => x.indexes.length > 0)) {
-                        translator.pushedDown.distinct = true;
-                        collections = collections.map(collection => collection.distinct());
+                        windowSteps.push("limit(?)");
+                        windowParameters.push(option.value);
                     }
                     return
                 }
@@ -437,26 +420,22 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
             const seek = indexSeed != null ? describeSeed(indexSeed) : null;
 
-            const explain = (steps: string[]) => {
-                const parameters = [...(seek?.parameters ?? []), ...described.parameters];
-
-                event.executedQueries.push({
-                    text: [
-                        seek != null
-                            ? `${collectionName}.${seek.text} — ${collections.length > 1 ? `${collections.length} IndexedDB index seeks` : "IndexedDB index seek"}`
-                            : sortSeed != null
-                                ? `${collectionName}.${describeSort(sortSeed)} — IndexedDB index walk in key order`
-                                : `${collectionName}.toCollection()`,
-                        ...(hasFilter ? [`filter(${described.text})${indexSeed != null ? " — JavaScript predicate over the seeked rows" : " — JavaScript predicate over a full cursor walk, no index"}`] : []),
-                        ...steps
-                    ].join("."),
-                    parameters: parameters.length > 0 ? parameters : undefined
-                });
+            const explain = (terminal: string) => {
+                event.executedQueries.push(dexieQuery({
+                    table: collectionName,
+                    read: seek?.text ?? (sortSeed != null ? describeSort(sortSeed) : "toCollection()"),
+                    filter: hasFilter ? described.text : null,
+                    steps: windowSteps,
+                    terminal,
+                    parameters: [...(seek?.parameters ?? []), ...described.parameters, ...windowParameters],
+                    seeks: seek != null ? collections.length : 0,
+                    walksIndex: sortSeed != null,
+                }));
             };
 
             if (canPushDownCount) {
                 Promise.all(collections.map(collection => collection.count())).then(counts => {
-                    explain(["count()"]);
+                    explain("count()");
                     d(PluginEventResult.success(event.id, new TranslatedSingleValue<TShape>(counts.reduce((sum, count) => sum + count, 0), true)));
                 }).catch(e => d(PluginEventResult.error(event.id, e)));
                 return;
@@ -477,11 +456,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                  * The "no index" note stays on the walk path: it is the fact that separates a slow
                  * backend from a silent memory fallback when comparing against SQL engines.
                  */
-                explain([
-                    ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
-                    ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
-                    ...(translator.pushedDown.distinct ? ["distinct()"] : [])
-                ]);
+                explain("toArray()");
 
                 if (reviveDates != null) {
                     for (let i = 0, length = data.length; i < length; i++) {

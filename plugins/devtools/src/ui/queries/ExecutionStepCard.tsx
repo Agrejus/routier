@@ -16,7 +16,13 @@ function DatabaseWork({ step }: ExecutionStepCardProps) {
     <>
       {step.executedQueries.map((query, index) => (
         <div key={index} class="statement">
-          <pre class="statement-text">{query.text}</pre>
+          {(query.language !== undefined || query.note !== undefined) && (
+            <p class="statement-note">
+              {query.language !== undefined && <span class="statement-language">{query.language}</span>}
+              {query.note}
+            </p>
+          )}
+          {query.text !== "" && <pre class="statement-text">{query.text}</pre>}
           {query.parameters !== undefined && query.parameters.length > 0 && (
             <pre class="statement-parameters">{formatValue(query.parameters)}</pre>
           )}

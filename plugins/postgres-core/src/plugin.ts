@@ -233,7 +233,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 ).then(rows => {
                     // After the statement ran, not before: RetryDbPlugin re-invokes with the
                     // same event, so pushing first would report one entry per failed attempt.
-                    event.executedQueries.push({ text: built.sql, parameters: built.params });
+                    event.executedQueries.push({ text: built.sql, parameters: built.params, language: "sql" });
 
                     // Nested objects and arrays are stored as JSON columns; decode them before
                     // translation so the entity gets a structure back rather than a JSON
@@ -292,7 +292,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 return this.withConnection(connection =>
                     this.runWithTable(connection, built, createTableSql)
                 ).then(rows => {
-                    event.executedQueries.push({ text: built.sql, parameters: built.params });
+                    event.executedQueries.push({ text: built.sql, parameters: built.params, language: "sql" });
 
                     const tuples = splitJoinRows({
                         rows: rows as UnknownRecord[],
