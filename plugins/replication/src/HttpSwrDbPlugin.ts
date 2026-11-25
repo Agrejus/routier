@@ -32,6 +32,8 @@ import { KeyedMutex, notModifiedError, RequestPacer } from './httpUtils';
 import { addOutcomes, bodyForUnits, NOTHING_DELIVERED, QueuedWriteSender, type DeliveryOutcome } from './queuedWrites';
 import { runWithOnError, statusOf, type ActionKit, type Settlement } from './requestFailures';
 import { emitEvent, type SwrRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
+import { createConflictSettler, isConflictResponse, isRecord, type ConflictHandlingOptions, type ResolvedRow } from './conflictSettler';
+import { ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from '@routier/core/expressions';
 
 /** What a sync moved. Returned by `syncNow()` and reported as the `synced` event. */
 export type SyncOutcome = DeliveryOutcome;
@@ -65,7 +67,7 @@ export interface AutoSyncOptions {
 }
 
 /** SWR-specific options for HttpSwrDbPlugin. */
-export interface HttpSwrDbPluginOptions extends HttpConnectionOptions, SyncHooks<SwrRequestError> {
+export interface HttpSwrDbPluginOptions extends HttpConnectionOptions, SyncHooks<SwrRequestError>, ConflictHandlingOptions {
     /**
      * Background sync policy. Omit for the automatic default (retry on a backing-off timer plus
      * an immediate flush when connectivity returns), pass an object to tune it, or pass `false`
@@ -152,6 +154,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly translatePersistResponse?: (schema: CompiledSchema<UnknownRecord>, responseBody: unknown) => unknown[] | null;
     private readonly unsyncedQueue: UnsyncedQueue;
     private readonly sender: QueuedWriteSender;
+    /** Set when a conflict resolver is configured, which needs each update's values before the edit. */
+    readonly receivesPreviousValues: boolean;
     private readonly onEvent?: (event: SyncEvent) => void;
     private readonly onError?: (error: SwrRequestError) => void;
     /**
@@ -229,7 +233,20 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             onEvent: options.onEvent,
             afterSent: (collectionName, responseBody) => this.reconcileFlushResponse(collectionName, responseBody),
             afterRejected: (collectionName) => this.forgetFreshness(collectionName),
+            conflicts: options.resolveConflict == null ? undefined : createConflictSettler(options.resolveConflict, options.isConflict ?? isConflictResponse, {
+                queue: this.unsyncedQueue,
+                schemaOf: (collectionName) => this.schemasByCollection.get(collectionName) ?? null,
+                fetchRemote: (schema, local) => options.fetchRemote?.(schema.collectionName, local) ?? this.fetchRemoteRow(schema, local),
+                applyRow: (schema, row) => this.applyResolvedRow(schema, row),
+                onEvent: options.onEvent,
+                flushSoon: () => {
+                    if (this.postOnPersist) {
+                        this.flushSoon();
+                    }
+                },
+            }),
         });
+        this.receivesPreviousValues = options.resolveConflict != null;
         this.postOnPersist = options?.postOnPersist ?? true;
         this.writeBatchDelayMs = options.writeBatchDelayMs ?? DEFAULT_WRITE_BATCH_DELAY_MS;
         this.autoSync = resolveAutoSync(options);
@@ -699,8 +716,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     /**
      * Persist a revalidate classification to the SWR store. Resolves when the store has been updated.
      */
-    private applyRevalidatePersist<TRoot extends {}, TShape>(
-        event: DbPluginQueryEvent<TRoot, TShape>,
+    private applyRevalidatePersist(
+        schemas: SchemaCollection,
         schema: CompiledSchema<Record<string, unknown>>,
         classification: RevalidateClassification
     ): Promise<void> {
@@ -721,7 +738,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
         const swrEvent: DbPluginBulkPersistEvent = {
             id: uuid(8),
-            schemas: event.schemas,
+            schemas,
             operation: bulkChanges,
             source: HttpSwrDbPlugin.name,
             action: 'persist' as const,
@@ -749,6 +766,61 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 }
                 this.notifySchemaSubscription(schema, classification);
                 resolve();
+            });
+        });
+    }
+
+    /** Writes the row a conflict resolver settled on into the SWR store, and tells subscribers. */
+    private applyResolvedRow(schema: CompiledSchema<UnknownRecord>, row: ResolvedRow): Promise<void> {
+        const schemas = this.lastSeenSchemas;
+
+        if (schemas == null) {
+            return Promise.resolve();
+        }
+
+        return this.applyRevalidatePersist(schemas, schema, 'put' in row
+            ? { adds: [], updates: [{ entity: row.put, changeType: 'markedDirty', delta: {} }], removes: [] }
+            : { adds: [], updates: [], removes: [row.remove] });
+    }
+
+    /** Reads one row from the server by its key, through the same GET as a filtered read. */
+    private fetchRemoteRow(schema: CompiledSchema<UnknownRecord>, local: UnknownRecord): Promise<UnknownRecord | null> {
+        const keys = schema.idProperties.map(property => ({ property, value: local[property.getResolvedName()] }));
+        const expression = keys
+            .map(({ property, value }): Expression => new ComparatorExpression({
+                comparator: 'equals',
+                negated: false,
+                strict: true,
+                left: new PropertyExpression({ property }),
+                right: new ValueExpression({ value }),
+            }))
+            .reduce((left, right) => new OperatorExpression({ operator: '&&', left, right }));
+        const options = QueryOptionsCollection.EMPTY<UnknownRecord>();
+
+        options.add('filter', {
+            filter: (row: UnknownRecord) => keys.every(({ property, value }) => row[property.getResolvedName()] === value),
+            expression,
+            params: undefined,
+        });
+
+        return new Promise((resolve, reject) => {
+            this.httpPlugin.query({
+                id: uuid(8),
+                schemas: this.lastSeenSchemas ?? new SchemaCollection(),
+                source: HttpSwrDbPlugin.name,
+                action: 'query',
+                explain: false,
+                executedQueries: [],
+                operation: new Query<UnknownRecord, UnknownRecord>(options, schema),
+            }, result => {
+                if (result.ok === Result.ERROR) {
+                    reject(result.error);
+                    return;
+                }
+
+                const [row] = this.queryResultToArray(result.data);
+
+                resolve(isRecord(row) ? row : null);
             });
         });
     }
@@ -831,7 +903,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             currentRows
         });
 
-        await this.applyRevalidatePersist(event, schema, classification);
+        await this.applyRevalidatePersist(event.schemas, schema, classification);
     }
 
     private async persistOnCacheMiss<TRoot extends {}, TShape>(
@@ -1144,6 +1216,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                     kind: 'update' as const,
                     entity: u.entity as unknown,
                     payload: buildUpdatePayload(schemaRecord, u.entity, u.delta),
+                    base: u.previous ?? null,
                 })),
                 ...removes.map((entity) => ({ kind: 'remove' as const, entity: entity as unknown })),
             ]);

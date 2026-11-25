@@ -32,6 +32,12 @@ export interface IDbPlugin {
      */
     readonly databaseName: string;
     /**
+     * Whether this plugin is given each update's `previous` values, which the datastore
+     * otherwise strips before calling a plugin. A sync plugin that resolves conflicts needs them
+     * as the base of a three-way merge, and must not send them anywhere.
+     */
+    readonly receivesPreviousValues?: boolean;
+    /**
      * Executes a query operation on the database.
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.

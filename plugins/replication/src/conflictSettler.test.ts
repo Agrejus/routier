@@ -1,0 +1,119 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { etags, s } from '@routier/core/schema';
+import type { CompiledSchema } from '@routier/core/schema';
+import type { UnknownRecord } from '@routier/core/utilities';
+import { MemoryPlugin } from '@routier/memory-plugin';
+import { HttpStatusError, NetworkError } from './httpUtils';
+import { createConflictSettler, isConflictResponse, remoteInResponse, requeuedChange } from './conflictSettler';
+import { UnsyncedQueue, type UnsyncedFlushUnit } from './UnsyncedQueue';
+
+const schema: CompiledSchema<UnknownRecord> = s.define('settlerTodos', {
+    id: s.string().key(),
+    title: s.string(),
+    version: s.number().etag(etags.numeric).optional(),
+}).compile() as never;
+
+const plainSchema: CompiledSchema<UnknownRecord> = s.define('settlerPlain', {
+    id: s.string().key(),
+    title: s.string(),
+}).compile() as never;
+
+const local = { id: 't1', title: 'Mine', version: 1 };
+const conflictWith = (body: unknown) => new HttpStatusError(409, 'conflict', null, body, { get: () => null });
+
+describe('isConflictResponse', () => {
+    it('is an HTTP 409', () => {
+        expect(isConflictResponse({ kind: 'http', status: 409, headers: { get: () => null }, body: null })).toBe(true);
+        expect(isConflictResponse({ kind: 'http', status: 412, headers: { get: () => null }, body: null })).toBe(false);
+        expect(isConflictResponse({ kind: 'network' })).toBe(false);
+    });
+});
+
+describe('remoteInResponse', () => {
+    it.each([
+        ['the body', { id: 't1', title: 'Theirs' }],
+        ['its current field', { current: { id: 't1', title: 'Theirs' } }],
+        ['its remote field', { remote: { id: 't1', title: 'Theirs' } }],
+    ])('finds the server row in %s', (_, body) => {
+        expect(remoteInResponse(schema, local, conflictWith(body))).toEqual({ id: 't1', title: 'Theirs' });
+    });
+
+    it('ignores a row with another key', () => {
+        expect(remoteInResponse(schema, local, conflictWith({ id: 't2', title: 'Theirs' }))).toBeNull();
+    });
+
+    it('ignores a body that is not an object', () => {
+        expect(remoteInResponse(schema, local, conflictWith('stale'))).toBeNull();
+        expect(remoteInResponse(schema, local, conflictWith([{ id: 't1' }]))).toBeNull();
+        expect(remoteInResponse(schema, local, new NetworkError(new Error('offline')))).toBeNull();
+    });
+});
+
+describe('requeuedChange', () => {
+    it('adds the row when the server has none', () => {
+        expect(requeuedChange(schema, local, null)).toEqual({ entity: local, change: { kind: 'add', entity: local } });
+    });
+
+    it('updates only the fields that differ from the server, over its version', () => {
+        expect(requeuedChange(schema, { id: 't1', title: 'Mine', version: 1 }, { id: 't1', title: 'Theirs', version: 2 })).toEqual({
+            entity: { id: 't1', title: 'Mine', version: 2 },
+            change: { kind: 'update', entity: { id: 't1', title: 'Mine', version: 2 }, payload: { id: 't1', title: 'Mine', version: 2 }, base: { title: 'Theirs' } },
+        });
+    });
+
+    it('keeps the row as it is when the schema has no version', () => {
+        expect(requeuedChange(plainSchema, { id: 't1', title: 'Mine' }, { id: 't1', title: 'Theirs' })?.entity).toEqual({ id: 't1', title: 'Mine' });
+    });
+
+    it('is nothing when the row already matches the server', () => {
+        expect(requeuedChange(schema, { id: 't1', title: 'Theirs', version: 1 }, { id: 't1', title: 'Theirs', version: 2 })).toBeNull();
+    });
+});
+
+describe('createConflictSettler', () => {
+    const unit = (entity: unknown): UnsyncedFlushUnit => ({ rows: [], kind: 'update', entity, payload: entity, opId: null, base: {} });
+
+    const settler = (fetchRemote: () => Promise<UnknownRecord | null>, schemaOf = () => schema) => {
+        const queue = new UnsyncedQueue(new MemoryPlugin(`settler-${Math.random()}`));
+        const recordFailedAttempt = jest.spyOn(queue, 'recordFailedAttempt').mockResolvedValue();
+        const resolver = jest.fn(() => null);
+        const settle = createConflictSettler(resolver, isConflictResponse, {
+            queue,
+            schemaOf,
+            fetchRemote,
+            applyRow: async () => undefined,
+            flushSoon: () => undefined,
+        });
+
+        return { settle, resolver, recordFailedAttempt };
+    };
+
+    it('says which errors are conflicts', () => {
+        const { settle } = settler(async () => null);
+
+        expect(settle.isConflict(conflictWith(null))).toBe(true);
+        expect(settle.isConflict(new HttpStatusError(500, 'x', null, null, { get: () => null }))).toBe(false);
+        expect(settle.isConflict(new Error('not a request'))).toBe(false);
+    });
+
+    it('rejects a change for a collection it has no schema for', async () => {
+        const { settle, resolver } = settler(async () => null, () => null);
+
+        expect(await settle.settle('unknown', unit(local), conflictWith(null))).toBe('reject');
+        expect(resolver).not.toHaveBeenCalled();
+    });
+
+    it('rejects a change whose row is not an object', async () => {
+        const { settle } = settler(async () => null);
+
+        expect(await settle.settle('settlerTodos', unit('t1'), conflictWith(null))).toBe('reject');
+    });
+
+    it('keeps the change queued, without asking the resolver, when the server row cannot be read', async () => {
+        const { settle, resolver, recordFailedAttempt } = settler(async () => { throw new Error('offline'); });
+
+        expect(await settle.settle('settlerTodos', unit(local), conflictWith(null))).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
+        expect(resolver).not.toHaveBeenCalled();
+        expect(recordFailedAttempt).toHaveBeenCalledTimes(1);
+    });
+});

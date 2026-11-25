@@ -4,15 +4,23 @@ import { conflictOf, runWithOnError, statusOf, type ActionKit } from './requestF
 import { emitEvent, type SwrRequestError, type SyncEvent } from './syncHooks';
 import type { UnsyncedFlushUnit, UnsyncedQueue } from './UnsyncedQueue';
 
-export type DeliveryOutcome = { sent: number; failed: number; rejected: number };
+/** How a flush went: sent, still queued after a failure, dead-lettered, or settled by a conflict resolver. */
+export type DeliveryOutcome = { sent: number; failed: number; rejected: number; resolved: number };
 
-export const NOTHING_DELIVERED: DeliveryOutcome = { sent: 0, failed: 0, rejected: 0 };
+export const NOTHING_DELIVERED: DeliveryOutcome = { sent: 0, failed: 0, rejected: 0, resolved: 0 };
 
 export const addOutcomes = (a: DeliveryOutcome, b: DeliveryOutcome): DeliveryOutcome => ({
     sent: a.sent + b.sent,
     failed: a.failed + b.failed,
     rejected: a.rejected + b.rejected,
+    resolved: a.resolved + b.resolved,
 });
+
+/** Settles one change the server refused as a conflict, or returns `reject` to dead-letter it. */
+export type ConflictSettler = {
+    isConflict: (error: Error) => boolean;
+    settle: (collectionName: string, unit: UnsyncedFlushUnit, error: Error) => Promise<DeliveryOutcome | 'reject'>;
+};
 
 export type QueuedWriteSenderOptions = {
     queue: UnsyncedQueue;
@@ -22,6 +30,7 @@ export type QueuedWriteSenderOptions = {
     onEvent?: (event: SyncEvent) => void;
     afterSent: (collectionName: string, responseBody: unknown) => Promise<void>;
     afterRejected: (collectionName: string) => void;
+    conflicts?: ConflictSettler;
 };
 
 const refusedBy = (error: Error, units: UnsyncedFlushUnit[]): UnsyncedFlushUnit[] => {
@@ -74,27 +83,40 @@ export class QueuedWriteSender {
             onError: this.options.onError,
             actions: ({ retry, reject, defer }: ActionKit) => ({ retry, reject, defer }),
             unhandled: (kit: ActionKit) => kit.defer(),
+            isConflict: this.options.conflicts?.isConflict,
         });
 
         if (settled.outcome === 'success') {
             await this.options.queue.removeRows(rows);
             await this.options.afterSent(collectionName, settled.value).catch(error =>
                 logger.warn('[HttpSwrDbPlugin] could not reconcile the server response', { collectionName, error }));
-            return { sent: units.length, failed: 0, rejected: 0 };
+            return { ...NOTHING_DELIVERED, sent: units.length };
         }
 
         if (settled.outcome === 'rejected') {
-            return this.narrow(collectionName, url, units, settled.error);
+            return this.narrow(collectionName, url, units, settled.error, refused => this.reject(collectionName, refused, settled.error));
+        }
+
+        const conflicts = this.options.conflicts;
+
+        if (settled.outcome === 'conflict' && conflicts != null) {
+            return this.narrow(collectionName, url, units, settled.error, refused => this.settleConflicts(conflicts, collectionName, refused, settled.error));
         }
 
         await this.options.queue.recordFailedAttempt(rows).catch(error =>
             logger.warn('[HttpSwrDbPlugin] could not record a failed attempt', { collectionName, error }));
-        return { sent: 0, failed: units.length, rejected: 0 };
+        return { ...NOTHING_DELIVERED, failed: units.length };
     }
 
-    private async narrow(collectionName: string, url: string, units: UnsyncedFlushUnit[], error: Error): Promise<DeliveryOutcome> {
+    private async narrow(
+        collectionName: string,
+        url: string,
+        units: UnsyncedFlushUnit[],
+        error: Error,
+        settle: (refused: UnsyncedFlushUnit[]) => Promise<DeliveryOutcome>
+    ): Promise<DeliveryOutcome> {
         if (units.length === 1) {
-            return this.reject(collectionName, units, error);
+            return settle(units);
         }
 
         const refused = refusedBy(error, units);
@@ -104,9 +126,21 @@ export class QueuedWriteSender {
         }
 
         const rest = units.filter(unit => !refused.includes(unit));
-        const rejected = await this.reject(collectionName, refused, error);
+        const settled = await settle(refused);
 
-        return rest.length === 0 ? rejected : addOutcomes(rejected, await this.send(collectionName, url, rest));
+        return rest.length === 0 ? settled : addOutcomes(settled, await this.send(collectionName, url, rest));
+    }
+
+    private async settleConflicts(conflicts: ConflictSettler, collectionName: string, units: UnsyncedFlushUnit[], error: Error): Promise<DeliveryOutcome> {
+        let outcome = NOTHING_DELIVERED;
+
+        for (const unit of units) {
+            const settled = await conflicts.settle(collectionName, unit, error);
+
+            outcome = addOutcomes(outcome, settled === 'reject' ? await this.reject(collectionName, [unit], error) : settled);
+        }
+
+        return outcome;
     }
 
     private async oneAtATime(collectionName: string, url: string, units: UnsyncedFlushUnit[]): Promise<DeliveryOutcome> {
@@ -126,14 +160,14 @@ export class QueuedWriteSender {
             deadRowIds = new Set((await this.options.queue.deadLetter(units.flatMap(unit => unit.rows))).map(row => row.id));
         } catch (writeError) {
             logger.error('[HttpSwrDbPlugin] could not record rejected changes; they stay queued', { collectionName, error: writeError });
-            return { sent: 0, failed: units.length, rejected: 0 };
+            return { ...NOTHING_DELIVERED, failed: units.length };
         }
 
         const refused = units.filter(unit => unit.rows.some(row => deadRowIds.has(row.id)));
         const superseded = units.length - refused.length;
 
         if (refused.length === 0) {
-            return { sent: 0, failed: superseded, rejected: 0 };
+            return { ...NOTHING_DELIVERED, failed: superseded };
         }
 
         this.options.afterRejected(collectionName);
@@ -146,6 +180,6 @@ export class QueuedWriteSender {
             error,
         });
 
-        return { sent: 0, failed: superseded, rejected: refused.length };
+        return { ...NOTHING_DELIVERED, failed: superseded, rejected: refused.length };
     }
 }

@@ -44,6 +44,8 @@ const nextSeq = (): number => ++seqCounter;
 
 export type QueuedChangeKind = 'add' | 'update' | 'remove';
 
+type ExistingUpdate = { payload: Record<string, unknown> | null; base: Record<string, unknown> };
+
 /** One local change awaiting remote confirmation. */
 export type QueuedChange = {
     kind: QueuedChangeKind;
@@ -59,6 +61,11 @@ export type QueuedChange = {
      * send the whole entity. Computed by the caller, which has the schema and the delta.
      */
     payload?: Record<string, unknown> | null;
+    /**
+     * For updates: what the changed fields held before the edit, in stored names. Kept for a
+     * conflict resolver and never sent.
+     */
+    base?: Record<string, unknown> | null;
 };
 
 function rowIdOf(collectionName: string, kind: QueuedChangeKind, recordIdsJson: string): string {
@@ -89,6 +96,8 @@ const unsyncedQueueSchema = s
          * entity goes over the wire, which is also what a pre-hardening row means.
          */
         payloadJson: s.string().optional(),
+        /** For updates: JSON of the changed fields' values before the first queued edit. Never sent. */
+        baseJson: s.string().optional(),
     })
     .compile();
 
@@ -107,6 +116,8 @@ export interface UnsyncedFlushUnit {
     /** What actually goes in the request body — trimmed for updates, the entity otherwise. */
     payload: unknown;
     opId: string | null;
+    /** The changed fields' values before the edit, for a conflict resolver. Empty when unknown. */
+    base: Record<string, unknown>;
 }
 
 /** Grouped unsynced changes for one collection, ready to become a POST body. */
@@ -135,6 +146,17 @@ function isDead(row: UnsyncedQueueRow): boolean {
     return row.status === 'dead';
 }
 
+/** The changed fields' values before the edit, or an empty object when the row does not carry them. */
+function parseBase(row: UnsyncedQueueRow): Record<string, unknown> {
+    if (row.baseJson == null) return {};
+
+    try {
+        return JSON.parse(row.baseJson) as Record<string, unknown>;
+    } catch {
+        return {};
+    }
+}
+
 /** The trimmed update body a row carries, or null for "send the whole entity". */
 function parsePayload(row: UnsyncedQueueRow): Record<string, unknown> | null {
     if (row.payloadJson == null) return null;
@@ -159,7 +181,7 @@ function parsePayload(row: UnsyncedQueueRow): Record<string, unknown> | null {
  * has never seen this entity, so an update would address a row that does not exist there.
  * Rows with no seq predate the column and sort oldest.
  */
-function coalesceGroup(group: UnsyncedQueueRow[]): { kind: QueuedChangeKind; entity: unknown; payload: unknown; winner: UnsyncedQueueRow } | null {
+function coalesceGroup(group: UnsyncedQueueRow[]): { kind: QueuedChangeKind; entity: unknown; payload: unknown; base: Record<string, unknown>; winner: UnsyncedQueueRow } | null {
     const ordered = [...group].sort((a, b) => (a.seq ?? Number.NEGATIVE_INFINITY) - (b.seq ?? Number.NEGATIVE_INFINITY));
     const newest = ordered[ordered.length - 1];
     if (newest == null) return null;
@@ -171,8 +193,10 @@ function coalesceGroup(group: UnsyncedQueueRow[]): { kind: QueuedChangeKind; ent
         return null;
     }
 
+    const base = parseBase(newest);
+
     if (kindOfRow(newest) === 'remove') {
-        return { kind: 'remove', entity, payload: entity, winner: newest };
+        return { kind: 'remove', entity, payload: entity, base, winner: newest };
     }
 
     const hasPendingAdd = ordered.some((r) => kindOfRow(r) === 'add');
@@ -180,10 +204,10 @@ function coalesceGroup(group: UnsyncedQueueRow[]): { kind: QueuedChangeKind; ent
     // A pending add means the server has never seen this row, so the whole entity goes — there is
     // nothing there for a partial body to be applied to.
     if (hasPendingAdd) {
-        return { kind: 'add', entity, payload: entity, winner: newest };
+        return { kind: 'add', entity, payload: entity, base: {}, winner: newest };
     }
 
-    return { kind: kindOfRow(newest), entity, payload: parsePayload(newest) ?? entity, winner: newest };
+    return { kind: kindOfRow(newest), entity, payload: parsePayload(newest) ?? entity, base, winner: newest };
 }
 
 /**
@@ -213,9 +237,8 @@ export class UnsyncedQueue {
 
         // A partial update payload has to merge with whatever that row already carries: the row
         // is replaced, so an earlier edit's fields would otherwise never reach the server.
-        const existingPayloads = changes.some((c) => c.kind === 'update' && c.payload != null)
-            ? await this.payloadsByRowId(collectionName)
-            : new Map<string, Record<string, unknown> | null>();
+        const updating = changes.some((c) => c.kind === 'update' && (c.payload != null || c.base != null));
+        const existing = updating ? await this.updatesByRowId(collectionName) : new Map<string, ExistingUpdate>();
 
         const adds = changes.map((c) => {
             c.revision = c.revision ?? uuidv4();
@@ -224,9 +247,11 @@ export class UnsyncedQueue {
 
             const recordIds = recordIdsKey(schemaAny, c.entity);
             const rowId = rowIdOf(collectionName, c.kind, recordIds);
-            const payload = c.kind === 'update' && existingPayloads.has(rowId)
-                ? mergeUpdatePayloads(existingPayloads.get(rowId) ?? null, c.payload ?? null)
+            const previous = c.kind === 'update' ? existing.get(rowId) : undefined;
+            const payload = previous != null
+                ? mergeUpdatePayloads(previous.payload, c.payload ?? null)
                 : c.payload ?? null;
+            const base = c.kind === 'update' ? { ...c.base, ...previous?.base } : {};
 
             return {
                 recordIds,
@@ -236,6 +261,7 @@ export class UnsyncedQueue {
                 opId: c.opId,
                 seq: c.seq,
                 payloadJson: payload == null ? undefined : JSON.stringify(payload),
+                baseJson: Object.keys(base).length === 0 ? undefined : JSON.stringify(base),
             };
         });
 
@@ -243,15 +269,15 @@ export class UnsyncedQueue {
     }
 
     /**
-     * Current update payloads for a collection, by row id. A row present with `null` means it is
-     * already carrying a whole-entity update, which absorbs any partial merged into it.
+     * The queued update for each row of a collection: its payload, where `null` means it already
+     * carries a whole-entity update, which absorbs any partial merged into it; and its base.
      */
-    private async payloadsByRowId(collectionName: string): Promise<Map<string, Record<string, unknown> | null>> {
-        const byRowId = new Map<string, Record<string, unknown> | null>();
+    private async updatesByRowId(collectionName: string): Promise<Map<string, ExistingUpdate>> {
+        const byRowId = new Map<string, ExistingUpdate>();
 
         for (const row of await this.allRows()) {
             if (row.collectionName !== collectionName || kindOfRow(row) !== 'update') continue;
-            byRowId.set(row.id, parsePayload(row));
+            byRowId.set(row.id, { payload: parsePayload(row), base: parseBase(row) });
         }
 
         return byRowId;
@@ -406,8 +432,8 @@ export class UnsyncedQueue {
                     continue;
                 }
 
-                const { kind, entity, payload: wirePayload, winner } = coalesced;
-                const unit: UnsyncedFlushUnit = { rows: group, kind, entity, payload: wirePayload, opId: winner.opId ?? null };
+                const { kind, entity, payload: wirePayload, base, winner } = coalesced;
+                const unit: UnsyncedFlushUnit = { rows: group, kind, entity, payload: wirePayload, opId: winner.opId ?? null, base };
                 payload.units.push(unit);
                 payload.rows.push(...group);
 
@@ -546,7 +572,7 @@ export class UnsyncedQueue {
 
     private persistToStore(op: {
         collectionName: string;
-        adds: Array<{ recordIds: string; changeKind: QueuedChangeKind; entityJson: string; revision: string; opId: string; seq: number; payloadJson?: string }>;
+        adds: Array<{ recordIds: string; changeKind: QueuedChangeKind; entityJson: string; revision: string; opId: string; seq: number; payloadJson?: string; baseJson?: string }>;
         removeRowIds: string[];
         /** Full-row overwrites (dead-letter, attempt bumps); re-added by id. */
         replacements?: UnsyncedQueueRow[];
@@ -560,7 +586,7 @@ export class UnsyncedQueue {
 
     private async persistToStoreLocked(op: {
         collectionName: string;
-        adds: Array<{ recordIds: string; changeKind: QueuedChangeKind; entityJson: string; revision: string; opId: string; seq: number; payloadJson?: string }>;
+        adds: Array<{ recordIds: string; changeKind: QueuedChangeKind; entityJson: string; revision: string; opId: string; seq: number; payloadJson?: string; baseJson?: string }>;
         removeRowIds: string[];
         replacements?: UnsyncedQueueRow[];
     }): Promise<void> {
@@ -586,6 +612,7 @@ export class UnsyncedQueue {
                 attempts: 0,
                 seq: add.seq,
                 payloadJson: add.payloadJson,
+                baseJson: add.baseJson,
             });
         }
         const candidates = [...candidatesById.values()];

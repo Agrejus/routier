@@ -15,9 +15,15 @@ export type ChangesRejectedEvent = {
     error: Error;
 };
 
-export type SyncedEvent = { type: 'synced'; sent: number; failed: number; rejected: number };
+export type SyncedEvent = { type: 'synced'; sent: number; failed: number; rejected: number; resolved: number };
 
-export type SyncEvent = ReadEvent | ChangesRejectedEvent | SyncedEvent;
+/**
+ * A conflict resolver settled a change the server refused: `merged` queued a new version,
+ * `server` took the server's row, and `deferred` left the change queued.
+ */
+export type ConflictResolvedEvent = { type: 'conflict-resolved'; collectionName: string; outcome: 'merged' | 'server' | 'deferred' };
+
+export type SyncEvent = ReadEvent | ChangesRejectedEvent | SyncedEvent | ConflictResolvedEvent;
 
 export type ResponseHeaders = { get(name: string): string | null };
 

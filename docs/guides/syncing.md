@@ -47,9 +47,10 @@ Most sync implementations follow a common pattern:
 
 3. **Conflict Resolution**
 
-   - Automatic resolution based on timestamps, versions, or other strategies
-   - Custom conflict handlers you can configure
-   - Manual resolution for complex conflicts
+   - `resolveConflict` on `HttpSwrDbPlugin` settles a write the server refuses with `409`
+   - Built in: `serverWins()`, `clientWins()`, `fieldMerge()` and `byCollection()`, or your own function
+   - `{ defer: true }` keeps the edit queued for manual resolution
+   - See [Resolving conflicts](/guides/local-first-apps#resolving-conflicts)
 
 4. **Offline Support**
    - Changes are queued when offline
@@ -91,6 +92,8 @@ When the same entity is modified in multiple places, conflicts occur. Common res
 - **Merge**: Combine changes from both sides intelligently
 - **Custom Logic**: Business-specific rules for resolving conflicts
 - **Manual Review**: Present conflicts to user for manual resolution
+
+`HttpSwrDbPlugin` runs these on the client with `resolveConflict`. See [Resolving conflicts](/guides/local-first-apps#resolving-conflicts).
 
 ### Retry and Error Handling
 

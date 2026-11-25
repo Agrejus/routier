@@ -189,7 +189,35 @@ For batched validation, the server can return `rejectedOpIds` so valid operation
 
 Routier protects an entity with pending local work from being overwritten by revalidation. That protection ends when the server confirms the operation or permanently rejects it.
 
-Routier does not provide an automatic CRDT or business-level merge policy. Choose one explicitly:
+### Resolving conflicts
+
+When the server refuses a write with `409 Conflict`, `HttpSwrDbPlugin` can settle it for you. Pass `resolveConflict`:
+
+<<< @/_snippets/code/from-docs/guides/local-first-apps/resolve-conflicts.ts
+
+The resolver gets the conflict and returns what to do:
+
+| Field | What it holds |
+| --- | --- |
+| `local` | The row as the client saved it. |
+| `remote` | The server's row, or `null` when the server no longer has it. |
+| `base` | The values the client's edited fields had before the edit. It names exactly the fields the client changed. |
+| `kind` | `"add"`, `"update"` or `"remove"`. |
+
+| Return | What happens |
+| --- | --- |
+| a row | Routier saves it locally and sends it again over the server's version. |
+| `null` | The server wins: Routier keeps the server's row and drops the local edit. |
+| `{ defer: true }` | The edit stays queued, so the app can resolve it later. |
+| throw | The change is rejected as before: dead letter and a `changes-rejected` event. |
+
+The built-in resolvers are `serverWins()`, `clientWins()` and `fieldMerge()`. `fieldMerge()` keeps both sides' changes. For a field both sides changed it takes the server's value, unless you pass `onBoth`. `byCollection()` picks a resolver by collection. A resolver may be `async`, for example to ask the user.
+
+Routier looks for the server's row in the `409` body: as the body itself, or as its `current` or `remote` field. When the body does not carry it, Routier reads the row by its key with the same GET as a filtered read. Pass `fetchRemote` to read it another way, and `isConflict` to treat another failure, such as `412`, as a conflict.
+
+Each settled conflict sends a `conflict-resolved` event, and `syncNow()` counts them in `resolved`.
+
+Without `resolveConflict`, choose a policy on the server:
 
 - **Server wins:** return `409`; notify the user, dead-letter the local operation, and revalidate.
 - **Version check:** declare the version with `.etag()`. Each update carries the version it was based on; reject an older one with `409`.

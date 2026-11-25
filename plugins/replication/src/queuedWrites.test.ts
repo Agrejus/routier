@@ -57,7 +57,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post).send(COLLECTION, URL, await queued('a', 'b'));
 
-        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0, resolved: 0 });
         expect([await queue.getPendingCount(), afterSent.mock.calls]).toEqual([0, [[COLLECTION, { saved: true }]]]);
     });
 
@@ -66,7 +66,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post).send(COLLECTION, URL, await queued('a'));
 
-        expect(outcome).toEqual({ sent: 0, failed: 1, rejected: 0 });
+        expect(outcome).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
         expect((await queue.getUnsyncedEntitiesForFlush(COLLECTION)).rows.map(row => row.attempts)).toEqual([1]);
     });
 
@@ -75,7 +75,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, error => { if (error.operation === 'write') error.defer(); }).send(COLLECTION, URL, await queued('a'));
 
-        expect([outcome, await queue.getPendingCount()]).toEqual([{ sent: 0, failed: 1, rejected: 0 }, 1]);
+        expect([outcome, await queue.getPendingCount()]).toEqual([{ sent: 0, failed: 1, rejected: 0, resolved: 0 }, 1]);
     });
 
     it('describes the failed batch as a write with retry, reject and defer', async () => {
@@ -98,7 +98,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, error => void error.retry()).send(COLLECTION, URL, await queued('a'));
 
-        expect([outcome, post.mock.calls.length]).toEqual([{ sent: 1, failed: 0, rejected: 0 }, 2]);
+        expect([outcome, post.mock.calls.length]).toEqual([{ sent: 1, failed: 0, rejected: 0, resolved: 0 }, 2]);
     });
 
     it('dead-letters and reports a single change onError rejects', async () => {
@@ -106,7 +106,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, await queued('a'));
 
-        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
         expect(await queue.getDeadLetters()).toHaveLength(1);
         expect(afterRejected).toHaveBeenCalledWith(COLLECTION);
         expect(events).toEqual([{
@@ -138,7 +138,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, units);
 
-        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1, resolved: 0 });
         expect(postsOf(post)[1]?.adds.map(add => add.id)).toEqual(['a', 'c']);
     });
 
@@ -147,7 +147,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, await queued('a', 'b'));
 
-        expect([outcome, post.mock.calls.length]).toEqual([{ sent: 0, failed: 0, rejected: 2 }, 1]);
+        expect([outcome, post.mock.calls.length]).toEqual([{ sent: 0, failed: 0, rejected: 2, resolved: 0 }, 1]);
     });
 
     it.each([
@@ -165,7 +165,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, units);
 
-        expect(outcome).toEqual({ sent: 1, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 1, failed: 0, rejected: 1, resolved: 0 });
         expect(postsOf(post).map(sent => sent.adds.map(add => add.id))).toEqual([['a', 'b'], ['a'], ['b']]);
     });
 
@@ -178,7 +178,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, await queued('a', 'b'));
 
-        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0, resolved: 0 });
     });
 
     it('reports a change whose other queued row was edited again while it was being sent', async () => {
@@ -190,7 +190,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, units);
 
-        expect([units.length, units[0]?.rows.length, outcome]).toEqual([1, 2, { sent: 0, failed: 0, rejected: 1 }]);
+        expect([units.length, units[0]?.rows.length, outcome]).toEqual([1, 2, { sent: 0, failed: 0, rejected: 1, resolved: 0 }]);
     });
 
     it('does not ask onError about a failure that is not a request failure', async () => {
@@ -199,7 +199,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, onError).send(COLLECTION, URL, await queued('a'));
 
-        expect([onError.mock.calls.length, outcome]).toEqual([0, { sent: 0, failed: 1, rejected: 0 }]);
+        expect([onError.mock.calls.length, outcome]).toEqual([0, { sent: 0, failed: 1, rejected: 0, resolved: 0 }]);
     });
 
     it('does not report a change that was edited again while it was being sent', async () => {
@@ -209,7 +209,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, units);
 
-        expect([outcome, events, await queue.getPendingCount()]).toEqual([{ sent: 0, failed: 1, rejected: 0 }, [], 1]);
+        expect([outcome, events, await queue.getPendingCount()]).toEqual([{ sent: 0, failed: 1, rejected: 0, resolved: 0 }, [], 1]);
     });
 
     it('keeps rejected changes queued when they cannot be dead-lettered', async () => {
@@ -220,7 +220,7 @@ describe('QueuedWriteSender', () => {
 
         const outcome = await sender(post, rejectWrites).send(COLLECTION, URL, units);
 
-        expect([outcome, events]).toEqual([{ sent: 0, failed: 1, rejected: 0 }, []]);
+        expect([outcome, events]).toEqual([{ sent: 0, failed: 1, rejected: 0, resolved: 0 }, []]);
         expect(error).toHaveBeenCalledWith('[HttpSwrDbPlugin] could not record rejected changes; they stay queued', { collectionName: COLLECTION, error: expect.any(Error) });
         error.mockRestore();
     });
@@ -251,7 +251,7 @@ describe('QueuedWriteSender', () => {
 
 describe('bodyForUnits', () => {
     it('groups changes by kind with their idempotency keys', () => {
-        const unit = (kind: UnsyncedFlushUnit['kind'], id: string, opId: string | null): UnsyncedFlushUnit => ({ rows: [], kind, entity: { id }, payload: { id }, opId });
+        const unit = (kind: UnsyncedFlushUnit['kind'], id: string, opId: string | null): UnsyncedFlushUnit => ({ rows: [], kind, entity: { id }, payload: { id }, opId, base: {} });
 
         const units = [unit('add', 'a', 'op-a'), unit('add', 'b', null), unit('update', 'u', 'op-u'), unit('update', 'v', null), unit('remove', 'r', 'op-r'), unit('remove', 's', null)];
 
@@ -266,10 +266,10 @@ describe('bodyForUnits', () => {
 
 describe('addOutcomes', () => {
     it('adds each count', () => {
-        expect(addOutcomes({ sent: 1, failed: 2, rejected: 3 }, { sent: 10, failed: 20, rejected: 30 })).toEqual({ sent: 11, failed: 22, rejected: 33 });
+        expect(addOutcomes({ sent: 1, failed: 2, rejected: 3, resolved: 4 }, { sent: 10, failed: 20, rejected: 30, resolved: 40 })).toEqual({ sent: 11, failed: 22, rejected: 33, resolved: 44 });
     });
 
     it('starts from nothing', () => {
-        expect(NOTHING_DELIVERED).toEqual({ sent: 0, failed: 0, rejected: 0 });
+        expect(NOTHING_DELIVERED).toEqual({ sent: 0, failed: 0, rejected: 0, resolved: 0 });
     });
 });

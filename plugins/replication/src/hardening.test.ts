@@ -90,7 +90,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('dead');
@@ -107,7 +107,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const postsBefore = http.posts.length;
         const second = await plugin.syncNow();
-        expect(second).toEqual({ sent: 0, failed: 0, rejected: 0 });
+        expect(second).toEqual({ sent: 0, failed: 0, rejected: 0, resolved: 0 });
         expect(http.posts).toHaveLength(postsBefore);
     });
 
@@ -118,7 +118,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         await persistPlugin(plugin, { adds: [{ id: 'kept', name: 'Refused' }] });
 
-        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
         expect((await readQueueRows(queueStore)).map((row) => row.status)).toEqual(['pending']);
         expect(rejections).toHaveLength(0);
     });
@@ -132,7 +132,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 10 });
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 10, resolved: 0 });
         expect(http.posts).toHaveLength(1);
         expect(await plugin.pendingCount()).toBe(0);
         expect(await plugin.deadLetters()).toHaveLength(10);
@@ -161,7 +161,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1, resolved: 0 });
         expect(http.posts).toHaveLength(2);
         expect(await plugin.pendingCount()).toBe(0);
         expect((await plugin.deadLetters()).map((row) => JSON.parse(row.entityJson).id)).toEqual(['named-poison']);
@@ -185,7 +185,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1, resolved: 0 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('dead');
@@ -201,7 +201,7 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
         expect(rejections).toEqual([expect.objectContaining({
             collectionName: 'swrHardening',
             conflict: true,
@@ -216,7 +216,7 @@ describe('hardening: dead-letter and poison isolation', () => {
         await persistPlugin(plugin, { adds: [{ id: 't-1', name: 'Later' }] });
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ sent: 0, failed: 1, rejected: 0 });
+        expect(outcome).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('pending');
@@ -1030,7 +1030,7 @@ describe('sync: off by default, on when asked', () => {
         expect(http.posts).toHaveLength(postsBefore);
         expect(await plugin.pendingCount()).toBe(1);
 
-        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0, resolved: 0 });
         expect(await plugin.pendingCount()).toBe(0);
     });
 
@@ -1101,8 +1101,8 @@ describe('sync: off by default, on when asked', () => {
         await plugin.syncNow();
 
         expect(synced).toEqual([
-            { type: 'synced', sent: 0, failed: 1, rejected: 0 },
-            { type: 'synced', sent: 1, failed: 0, rejected: 0 },
+            { type: 'synced', sent: 0, failed: 1, rejected: 0, resolved: 0 },
+            { type: 'synced', sent: 1, failed: 0, rejected: 0, resolved: 0 },
         ]);
     });
 
@@ -1112,7 +1112,7 @@ describe('sync: off by default, on when asked', () => {
 
         await persistPlugin(plugin, { adds: [{ id: 'thrower', name: 'Queued' }] });
 
-        await expect(plugin.syncNow()).resolves.toEqual({ sent: 1, failed: 0, rejected: 0 });
+        await expect(plugin.syncNow()).resolves.toEqual({ sent: 1, failed: 0, rejected: 0, resolved: 0 });
         expect(await plugin.pendingCount()).toBe(0);
     });
 
@@ -1130,7 +1130,7 @@ describe('sync: off by default, on when asked', () => {
         });
 
         await persistPlugin(plugin, { adds: [{ id: 'rejected', name: 'Bad record' }] });
-        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
 
         expect(await plugin.pendingCount()).toBe(0);
         const dead = await plugin.deadLetters();
@@ -1145,7 +1145,7 @@ describe('sync: off by default, on when asked', () => {
         http.respondToPost(() => ({ status: 200, body: {} }));
         const retried = await plugin.retryDeadLetters();
 
-        expect(retried).toEqual({ revived: 1, outcome: { sent: 1, failed: 0, rejected: 0 } });
+        expect(retried).toEqual({ revived: 1, outcome: { sent: 1, failed: 0, rejected: 0, resolved: 0 } });
         expect(await plugin.deadLetters()).toHaveLength(0);
         expect(await plugin.pendingCount()).toBe(0);
     });
@@ -1155,7 +1155,7 @@ describe('sync: off by default, on when asked', () => {
 
         expect(await plugin.retryDeadLetters()).toEqual({
             revived: 0,
-            outcome: { sent: 0, failed: 0, rejected: 0 },
+            outcome: { sent: 0, failed: 0, rejected: 0, resolved: 0 },
         });
     });
 
@@ -1170,7 +1170,7 @@ describe('sync: off by default, on when asked', () => {
         const retried = await plugin.retryDeadLetters();
 
         expect(retried.revived).toBe(1);
-        expect(retried.outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(retried.outcome).toEqual({ sent: 0, failed: 0, rejected: 1, resolved: 0 });
         expect(await plugin.deadLetters()).toHaveLength(1);
         expect(await plugin.pendingCount()).toBe(0);
     });
@@ -1388,10 +1388,10 @@ describe('sync: an update sends keys plus what changed', () => {
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e3', name: 'Renamed' }, delta: { name: 'Renamed' } }],
         });
-        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0, resolved: 0 });
 
         http.respondToPost(() => ({ status: 200, body: {} }));
-        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0, resolved: 0 });
 
         expect(lastPostBody().updates).toEqual([{ id: 'e3', name: 'Renamed' }]);
     });

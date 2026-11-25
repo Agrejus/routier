@@ -173,7 +173,7 @@ describe('HttpSwrDbPlugin hooks', () => {
 
             await plugin.syncNow();
 
-            expect(events.filter(event => event.type === 'synced')).toEqual([{ type: 'synced', sent: 0, failed: 0, rejected: 1 }]);
+            expect(events.filter(event => event.type === 'synced')).toEqual([{ type: 'synced', sent: 0, failed: 0, rejected: 1, resolved: 0 }]);
         });
 
         it('shapes every request with formatRequestBody', async () => {

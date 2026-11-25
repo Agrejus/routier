@@ -319,7 +319,7 @@ describe('HttpSwrDbPlugin integration', () => {
             http.respondToPost(() => ({ status: 200, body: {} }));
             const outcome = await plugin.syncNow();
 
-            expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0 });
+            expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0, resolved: 0 });
             const flushPost = http.posts[http.posts.length - 1];
             expect(flushPost.body).toEqual({
                 adds: [expect.objectContaining({ id: 'add-1' })],

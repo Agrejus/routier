@@ -2,7 +2,7 @@ import { logger } from '@routier/core/utilities';
 import { HttpStatusError, isConflictStatus, NetworkError } from './httpUtils';
 import type { FailureDetails, FailureKind } from './syncHooks';
 
-export type Ending = 'done' | 'cached' | 'rejected' | 'deferred';
+export type Ending = 'done' | 'cached' | 'rejected' | 'deferred' | 'conflict';
 
 export type Settlement<T> =
     | { outcome: 'success'; value: T }
@@ -31,6 +31,8 @@ export type RunOptions<T, TOperation extends 'read' | 'write', TActions> = {
     actions: (kit: ActionKit) => TActions;
     unhandled: (kit: ActionKit) => void;
     firstFailure?: Error;
+    /** Settles a failure this says is a conflict as `conflict`, before `onError` sees it. */
+    isConflict?: (error: Error) => boolean;
 };
 
 export const asError = (thrown: unknown): Error => (thrown instanceof Error ? thrown : new Error(String(thrown)));
@@ -38,6 +40,9 @@ export const asError = (thrown: unknown): Error => (thrown instanceof Error ? th
 export const statusOf = (error: Error): number | null => (error instanceof HttpStatusError ? error.status : null);
 
 export const conflictOf = (error: Error): boolean => isConflictStatus(statusOf(error) ?? 0);
+
+/** What kind of failure an error from a request is, or `null` when it did not come from one. */
+export const failureKindOf = (error: Error): FailureKind | null => kindOf(error, false);
 
 const kindOf = (error: Error, storeSource: boolean): FailureKind | null => {
     if (error instanceof HttpStatusError) {
@@ -57,6 +62,11 @@ export const runWithOnError = <T, TOperation extends 'read' | 'write', TActions>
     const { context, onError } = options;
 
     const fail = (attempt: number, error: Error): void => {
+        if (options.isConflict?.(error) === true) {
+            resolve({ outcome: 'conflict', error });
+            return;
+        }
+
         let claimed = false;
         const claim = (): boolean => {
             const first = !claimed;
