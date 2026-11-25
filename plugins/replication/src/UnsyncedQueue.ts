@@ -620,7 +620,7 @@ export class UnsyncedQueue {
         return new Promise((resolve, reject) => {
             this.store.bulkPersist(event, (result) => {
                 if (result.ok === Result.ERROR) {
-                    logger.warn('[UnsyncedQueue] store bulkPersist failed', { error: result.error, event });
+                    logger.warn('[UnsyncedQueue] store bulkPersist failed', { error: result.error, eventId: event.id });
                     reject(result.error);
                     return;
                 }

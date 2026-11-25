@@ -791,6 +791,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 getId,
                 getProperty,
                 properties,
+                sensitiveProperties: properties.filter(property => property.isSensitive),
                 idProperties,
                 etagProperty,
                 hasIdentities,

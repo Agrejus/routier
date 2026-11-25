@@ -132,7 +132,11 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 - **Proposal:** a `store.history.undo()` stack over committed saves. It is nearly free, demos
   well, and ORMs don't have it.
 
-### 11. Sensitive fields
+### 11. Sensitive fields - DONE
+
+Shipped as `.sensitive()`, `schema.sensitiveProperties`, and `sensitive: true` on a transform, which
+encryption sets. Routier hides the value in logs, `.explain()`, OpenTelemetry and devtools. It keeps it
+in query results, sync events and dead letters, which the app needs to act on.
 
 - **Current state:** encryption is declared per field as a schema transform, but nothing tells
   Routier's own outputs to hide a value. Logs, OpenTelemetry query text, `explain()` output, and

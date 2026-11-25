@@ -34,6 +34,8 @@ export class PropertyInfo<T extends {}> {
     readonly isIdentity: boolean;
     /** Whether the property is readonly. */
     readonly isReadonly: boolean;
+    /** Whether Routier hides the value in logs, `.explain()`, telemetry and devtools. Set by `.sensitive()`, or by a transform that declares `sensitive`. */
+    readonly isSensitive: boolean;
     readonly isEtag: boolean;
     readonly etagComparator: EtagComparator<EtagValue> | null;
     /** Whether the property is unmapped. */
@@ -118,6 +120,7 @@ export class PropertyInfo<T extends {}> {
         this.isKey = schema.isKey;
         this.isIdentity = schema.isIdentity;
         this.isReadonly = schema.isReadonly;
+        this.isSensitive = schema.isSensitive || schema.transform?.sensitive === true || parent?.isSensitive === true;
         this.isEtag = schema.isEtag;
         this.etagComparator = schema.etagComparator;
         this.isUnmapped = schema.isUnmapped;

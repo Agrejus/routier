@@ -46,6 +46,7 @@ function inspectCollection(collection: CollectionBase<{}>): InspectedCollection 
         name: collection.schema.collectionName,
         schemaId: collection.schema.id,
         kind: collection instanceof View ? "view" : "collection",
+        sensitivePaths: collection.schema.sensitiveProperties.map(property => property.id),
         count: () => collection[inspectionQueryable]().countAsync(),
         keyOf: (row: InspectedRow) => collection.schema.hash(row, HashType.Ids),
         watchCount: (onCount: (result: InspectedCount) => void) => watchCount(collection, onCount),

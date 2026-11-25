@@ -1,5 +1,6 @@
 export * from './describeFilter';
 export * from './explain';
+export * from './redactQueries';
 export * from './formatExplanation';
 export * from './join';
 export * from './Query';

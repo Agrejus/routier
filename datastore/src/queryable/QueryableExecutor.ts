@@ -1,5 +1,5 @@
 import { createQueryRecorder } from "../inspection/recordQuery";
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JoinTuple, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, filtersSensitive, redactExecutedQueries, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JoinTuple, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType, SchemaTypes } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -40,7 +40,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             pluginKind: this.dependencies.plugin.constructor.name
         });
 
-        const withOuter = withExecutedQueries(explanation, this.executedQueries);
+        const withOuter = withExecutedQueries(explanation, redactExecutedQueries(this.executedQueries, filtersSensitive(options)));
         const joinSide = this.request.joinSide;
 
         if (this.innerExecutedQueries.length === 0 || joinSide == null) {

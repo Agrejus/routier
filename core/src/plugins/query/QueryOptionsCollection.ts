@@ -1,6 +1,7 @@
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from "../../assertions";
 import { ComparatorExpression, Expression } from "../../expressions/types";
 import { forEach } from "../../expressions/utils";
+import { REDACTED } from "../../expressions/redact";
 import { SchemaTypes } from "../../schema/types";
 import { logger } from "../../utilities";
 import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
@@ -54,7 +55,7 @@ const mismatchWarning = (expression: ComparatorExpression): string => {
     const outcome = expression.negated ? "every row matches" : "no row matches";
 
     return `Routier: '${side.property.property.getAssignmentPath()}' is a ${side.expected}, and this filter ` +
-        `compares it against ${describeLiteral(side.value.value)}, which is a ${typeof side.value.value}. ` +
+        `compares it against ${side.property.property.isSensitive ? REDACTED : describeLiteral(side.value.value)}, which is a ${typeof side.value.value}. ` +
         `A strict comparison between them is the same answer for every row, so ${outcome} and the filter ` +
         `runs in memory. https://routier.dev/guides/strict-comparison-types`;
 };

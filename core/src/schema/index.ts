@@ -10,6 +10,7 @@ export type { SchemaSubscriptionOptions } from './communication/broadcast';
 export * from './utils/standardJsonSchema';
 export * from './utils/propertyKind';
 export * from './utils/storageDates';
+export * from './utils/redactEntity';
 export * from './SchemaDefinition';
 export { isRecordingFunctions, registerGeneratedFunctions } from './generatedFunctions';
 export type { EmittedFunction, FunctionRecorder, GeneratedFunctions } from './generatedFunctions';

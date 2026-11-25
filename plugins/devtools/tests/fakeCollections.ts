@@ -11,6 +11,7 @@ export function fakeCollection(name: string, overrides: Partial<InspectedCollect
     name,
     schemaId: schema.id,
     kind: "collection",
+    sensitivePaths: [],
     count: () => new Promise<number>(() => undefined),
     keyOf: (row) => String(row.id),
     watchCount: () => () => undefined,

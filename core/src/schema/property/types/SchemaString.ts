@@ -16,6 +16,7 @@ import { SchemaSearchable } from "../modifiers/SchemaSearchable";
 import { SchemaSerialize } from "../modifiers/SchemaSerialize";
 import { SchemaTag } from "../modifiers/SchemaTag";
 import { SchemaArray } from "./SchemaArray";
+import { SchemaSensitive } from "../modifiers/SchemaSensitive";
 
 export class SchemaString<T extends string, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
@@ -124,5 +125,7 @@ export class SchemaString<T extends string, TModifiers extends SchemaModifiers> 
         return new SchemaTag<T, TModifiers>(tags, this);
     }
 
-
+    sensitive() {
+        return new SchemaSensitive<T, TModifiers>(this);
+    }
 }

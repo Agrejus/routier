@@ -36,9 +36,9 @@ export type EncryptionOptions = {
  * privileged — a transform of your own with the same two functions works identically, and
  * that is the point.
  *
- * `stores` and `comparable` are set here rather than by the caller: a ciphertext is always
- * text, and only the deterministic mode can be compared. A schema that uses this says
- * `x.transform(cipher)` and nothing else.
+ * `stores`, `comparable` and `sensitive` are set here rather than by the caller: a ciphertext
+ * is always text, only the deterministic mode can be compared, and an encrypted value stays out
+ * of Routier's logs. A schema that uses this says `x.transform(cipher)` and nothing else.
  */
 export const encryption = (keyring: Keyring, options: EncryptionOptions = {}): PropertyTransform<any> => {
     const deterministic = options.searchable === true;
@@ -51,6 +51,8 @@ export const encryption = (keyring: Keyring, options: EncryptionOptions = {}): P
         // Only a stable ciphertext can be matched in the database. A randomised one cannot,
         // and saying so is what stops a filter silently returning nothing.
         comparable: deterministic ? 'equality' : 'none',
+
+        sensitive: true,
 
         async to(value: unknown) {
             if (value == null || isEnvelope(value)) {

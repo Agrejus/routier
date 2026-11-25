@@ -10,7 +10,7 @@ import {
     QueryOptionName,
 } from '@routier/core/plugins';
 import type { CompiledSchema, SubscriptionChanges } from '@routier/core/schema';
-import { HashType } from '@routier/core/schema';
+import { HashType, redactEntity } from '@routier/core/schema';
 import {
     PluginEventCallbackResult,
     PluginEventCallbackPartialResult,
@@ -140,6 +140,12 @@ interface RevalidateClassification {
     updates: { entity: unknown; changeType: 'markedDirty'; delta: Record<string, unknown> }[];
     removes: unknown[];
 }
+
+const redactClassification = (schema: CompiledSchema<Record<string, unknown>>, classification: RevalidateClassification) => ({
+    adds: classification.adds.map(row => redactEntity(schema, row)),
+    updates: classification.updates.map(update => ({ ...update, entity: redactEntity(schema, update.entity), delta: redactEntity(schema, update.delta) })),
+    removes: classification.removes.map(row => redactEntity(schema, row)),
+});
 
 /** Single-schema task for bulk persist: POST payload + data needed to finalize on success. */
 
@@ -712,10 +718,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         schemaChanges.removes = removes as never[];
 
         if (adds.length === 0 && updates.length === 0 && removes.length === 0) {
-            logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> no changes', {
-                classification,
-                bulkChanges
-            });
+            logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> no changes');
             return Promise.resolve();
         }
 
@@ -730,17 +733,15 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         };
 
         logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> before persist', {
-            classification,
-            bulkChanges
+            classification: redactClassification(schema, classification)
         });
 
         return new Promise((resolve, reject) => {
             this.swrStore.bulkPersist(swrEvent, (persistResult) => {
 
                 logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> after persist', {
-                    classification,
-                    bulkChanges,
-                    persistResult
+                    classification: redactClassification(schema, classification),
+                    ok: persistResult.ok
                 });
 
                 if (persistResult.ok === Result.ERROR) {
@@ -763,8 +764,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     ): void {
 
         logger.debug('[HttpSwrDbPlugin] notifySchemaSubscription() -> send', {
-            classification,
-            schema,
+            classification: redactClassification(schema, classification),
             collectionName: schema.collectionName
         });
 
@@ -826,9 +826,9 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         const classification = this.classifyRevalidateChanges(schema, incomingRows, currentRows, unsyncedKeys, rejectedKeys);
 
         logger.debug('[HttpSwrDbPlugin] mergeRevalidateAndPersist() -> classification', {
-            classification,
+            classification: redactClassification(schema, classification),
             unsyncedKeys,
-            currentRows
+            currentRows: currentRows.map(row => redactEntity(schema, row))
         });
 
         await this.applyRevalidatePersist(event, schema, classification);
@@ -1095,7 +1095,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 reason: 'optimistic',
                 etags: 'keep',
             };
-            logger.debug('[HttpSwrDbPlugin] persistToSwrStore', { swrEvent });
+            logger.debug('[HttpSwrDbPlugin] persistToSwrStore', { id: swrEvent.id, reason: swrEvent.reason });
             this.swrStore.bulkPersist(swrEvent, (persistResult) => {
                 if (persistResult.ok === Result.ERROR) {
                     reject(persistResult.error);
