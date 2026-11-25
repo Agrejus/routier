@@ -1246,6 +1246,18 @@ export function describePluginContract(
                 expect(found.map(p => p.name)).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
             });
 
+            test("sorts by a second key where the first key ties", async () => {
+                const found = await (await seeded()).products.sort(p => p.category).sortDescending(p => p.price).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo", "Alpha", "Delta", "Charlie"]);
+            });
+
+            test("takes a prefix of a result sorted by two keys", async () => {
+                const found = await (await seeded()).products.sort(p => p.category).sortDescending(p => p.price).take(3).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo", "Alpha", "Delta"]);
+            });
+
             test("skips a prefix of the result", async () => {
                 const found = await (await seeded()).products.sort(p => p.price).skip(2).toArrayAsync();
 

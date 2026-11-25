@@ -4,10 +4,12 @@ import { TranslatedArrayValue } from "./TranslatedArrayValue";
 import { TranslatedGroupValue } from "./TranslatedGroupValue";
 import { TranslatedSingleValue } from "./TranslatedSingleValue";
 import { ITranslatedValue } from "./types";
+import { nextSortKeys } from "./sortKeys";
 
 export abstract class DataTranslator<TRoot extends {}, TShape> {
 
     protected query: IQuery<TRoot, TShape>;
+    protected sortKeys: QueryOption<TShape, "sort">[] = [];
     private functionMap: Record<QueryOptionName, (data: unknown, option: QueryOption<any, any>) => TShape> = {
         count: (data: unknown, option: QueryOption<TShape, "count">) => this.count<any>(data, option),
         distinct: (data: unknown, option: QueryOption<TShape, "distinct">) => this.distinct(data, option),
@@ -76,7 +78,11 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
 
         const isTransformed = this.query.options.hasTransformations();
 
+        this.sortKeys = [];
+
         this.query.options.forEach(item => {
+            this.sortKeys = nextSortKeys(this.sortKeys, item);
+
             // The plugin reported it could not run this one, so the memory pass owns it now.
             if (item.target === "database" && item.reason !== "executed") {
                 return;

@@ -479,11 +479,8 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    // Build ORDER BY
-    for (const op of sortOps) {
-        const sortColumn = referencedColumn(op.value.property, op.value.propertyName, getDialect('mysql'));
-        const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY ${sortColumn} ${sortDir}`;
+    if (sortOps.length > 0) {
+        currentQuery += ` ORDER BY ${sortOps.map(op => `${referencedColumn(op.value.property, op.value.propertyName, getDialect('mysql'))} ${op.value.direction === 'asc' ? 'ASC' : 'DESC'}`).join(', ')}`;
     }
 
     // Handle skip/take

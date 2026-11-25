@@ -421,10 +421,8 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    for (const op of sortOps) {
-        const sortColumn = referencedColumn(op.value.property, op.value.propertyName, dialect);
-        const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY ${sortColumn} ${sortDir}`;
+    if (sortOps.length > 0) {
+        currentQuery += ` ORDER BY ${sortOps.map(op => `${referencedColumn(op.value.property, op.value.propertyName, dialect)} ${op.value.direction === 'asc' ? 'ASC' : 'DESC'}`).join(', ')}`;
     }
 
     // Phase 2: Handle skip/take operations (create subqueries)
