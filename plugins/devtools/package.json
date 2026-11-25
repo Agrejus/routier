@@ -1,6 +1,6 @@
 {
     "name": "@routier/devtools",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "In-page devtools for inspecting Routier data stores",
     "private": false,
     "type": "module",
@@ -21,8 +21,8 @@
         "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
     },
     "peerDependencies": {
-        "@routier/core": ">=0.9.5",
-        "@routier/datastore": ">=0.4.7"
+        "@routier/core": ">=0.10.0",
+        "@routier/datastore": ">=0.5.0"
     },
     "dependencies": {
         "preact": "^10.27.2"

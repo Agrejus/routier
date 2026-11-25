@@ -3,6 +3,77 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Conflict resolution, cursor pagination, sensitive fields and native explain (2026-11-25)
+
+Releases `@routier/core` 0.10.0, `@routier/datastore` 0.5.0, `@routier/replication-plugin` 0.7.0
+and `@routier/devtools` 0.2.0, with patches to the Dexie, PouchDB, MongoDB, SQLite, MySQL,
+Postgres, encryption and OpenTelemetry plugins. Every released plugin now needs
+`@routier/core` 0.10.0 or later. The other packages keep their published ranges.
+
+### Breaking — @routier/core 0.10.0
+
+- `describeFilters` returns the body of one JavaScript predicate (`x.age > ?`) and a `notes`
+  list, and returns an empty `text` when there is no filter. `describeUnparsableFilter(filter,
+  row, reason)` returns `{ text, note }` (#146).
+- `CompiledSchema` has a new required `sensitiveProperties` list. Only code that builds a compiled
+  schema by hand is affected (#144).
+- Chained sorts now order by the first sort, then by each later one where the earlier ones tie.
+  Memory, file-system and Dexie stores used to order by the last sort (#143).
+
+### Added — @routier/core 0.10.0
+
+- Conflict resolution contract: `Conflict`, `ConflictResolver`, and the built-ins `serverWins()`,
+  `clientWins()`, `fieldMerge({ onBoth })` and `byCollection()` (#147).
+- `.sensitive()` on string, number, boolean, date, object and array properties, and after
+  `.optional()` or `.nullable()`. A transform can declare `sensitive: true`.
+  `schema.sensitiveProperties` lists them. Routier hides their values in its logs, `.explain()`,
+  telemetry and the wire handler's explain output (#144).
+- `ExecutedQuery` has `language` and `note`. The memory plugin reports `posts.filter(x => ...)`,
+  and a cache hit reports a note with no query (#146).
+- Two dates with the same time now tie when sorting (#143).
+
+### Added — @routier/datastore 0.5.0
+
+- `.cursor(lastRow)` for keyset pagination, and `.cursor(null)` for the first page. It works on
+  live queries and behind `CacheDbPlugin` (#145).
+- `InspectedCollection.sensitivePaths` (#144).
+
+### Breaking — @routier/replication-plugin 0.7.0
+
+- `syncNow()` results and the `synced` event have a new `resolved` count (#147).
+
+### Added — @routier/replication-plugin 0.7.0
+
+- `HttpSwrDbPlugin` takes `resolveConflict`, `isConflict` and `fetchRemote`. A resolver settles a
+  queued write the server refuses as a conflict: it returns a row to send again, `null` for the
+  server's row, or `{ defer: true }`. A `conflict-resolved` event reports each outcome (#147).
+- Rows in the SWR plugin's log lines hide sensitive values (#144).
+
+### Added — @routier/devtools 0.2.0
+
+- Sensitive values show as `••••••` until **Show sensitive values** is pressed (#144).
+- Each statement in the Queries tab shows its language and note (#146).
+
+### Fixed — plugins
+
+- `@routier/sqlite-plugin` 0.6.5, `@routier/mysql-plugin` 0.5.4 and
+  `@routier/postgres-plugin-core` 0.3.5: two sorts produce one `ORDER BY`, not a syntax error
+  (#143).
+- `@routier/dexie-plugin` 0.4.6: `distinct` over an indexed property returns distinct values. It
+  returned every row, because Dexie's `distinct()` removes duplicate keys, not values. Explain
+  reports the real Dexie chain (#146).
+- `@routier/pouchdb-plugin` 0.5.3: explain reports the `db.query(...)` or `db.allDocs(...)` call it
+  made (#146).
+- `@routier/mongodb-plugin` 0.4.4: explain lists the filter's values as parameters (#146).
+- `@routier/encryption` 0.4.1: an encrypted property is sensitive (#144).
+- `@routier/otel-plugin` 0.1.1: `db.query.text` hides sensitive values (#144).
+
+### Docs
+
+- Upsert and undo/redo recipes for collections (#142). Sections on cursor pagination, sensitive
+  fields, resolving conflicts and each backend's explain output. The API reference is
+  regenerated (#148).
+
 ## Optional arrays, generated package schemas and memory cleanup (2026-11-08)
 
 Patches to `@routier/core`, `@routier/memory-plugin`, `@routier/datastore` and `@routier/cli`.
