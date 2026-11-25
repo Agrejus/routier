@@ -458,7 +458,7 @@ export class MysqlDbPlugin implements IDbPlugin {
             const [rows] = await connection.execute(sql, bindable(params));
 
             // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
-            event.executedQueries.push({ text: sql, parameters: params });
+            event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
             connection.release();
             done(Result.success(rows as TShape));
@@ -496,7 +496,7 @@ export class MysqlDbPlugin implements IDbPlugin {
             const [rows] = await connection.execute(sql, bindable(params));
 
             // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
-            event.executedQueries.push({ text: sql, parameters: params });
+            event.executedQueries.push({ text: sql, parameters: params, language: "sql" });
 
             connection.release();
             done(Result.success(rows as TShape));

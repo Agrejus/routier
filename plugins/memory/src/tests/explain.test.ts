@@ -44,10 +44,12 @@ describe('memory explain', () => {
         const reported = executedQueriesOf(explanation);
 
         expect(reported).toHaveLength(2);
-        expect(reported[0].text).toContain("explain_teams: scanned 2");
-        expect(reported[1].text).toContain("explain_members: scanned 1");
-        expect(reported[1].text).toContain("join inner side");
-        expect(reported[1].text).toContain("narrowed by 2 outer keys");
+        expect(reported[0]).toEqual({ text: "explain_teams", language: "javascript", note: "returned 2 in-memory records" });
+        expect(reported[1]).toEqual({
+            text: "explain_members.filter(x => outerKeys.has(x.teamId))",
+            language: "javascript",
+            note: expect.stringMatching(/^the join's inner side: returned 1 in-memory record, narrowed by \d+ outer keys?$/),
+        });
 
         await store.destroyAsync();
     });

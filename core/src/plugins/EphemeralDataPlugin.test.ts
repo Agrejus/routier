@@ -236,7 +236,7 @@ describe('EphemeralDataPlugin', () => {
                 options.add("filter", { filter: byValue, expression: toExpression(testSchema, byValue), params: undefined } as never);
             });
 
-            expect(executed).toStrictEqual([{ text: 'test: scanned 0 in-memory records, filter name === ?', parameters: ["Item 1"] }]);
+            expect(executed).toStrictEqual([{ text: 'test.filter(x => x.name === ?)', parameters: ["Item 1"], language: 'javascript', note: 'returned 0 in-memory records' }]);
         });
     });
 });

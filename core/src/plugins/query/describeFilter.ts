@@ -50,8 +50,8 @@ const COMPARATOR_METHODS: Partial<Record<Comparator, string>> = {
     "ends-with": "endsWith",
 };
 
-const renderProperty = (property: PropertyExpression): string =>
-    property.property.getPathArray().join(".");
+const renderProperty = (property: PropertyExpression, row: string): string =>
+    [row, ...property.property.getPathArray()].join(".");
 
 /**
  * The predicate as JavaScript, with every value replaced by `?`.
@@ -61,7 +61,7 @@ const renderProperty = (property: PropertyExpression): string =>
  * as a literal is indistinguishable from one arriving through a params object, which is what
  * makes both come out as `?` the way SQL treats them.
  */
-export const describeFilterAsJs = (expression: Expression): ParameterisedQuery => {
+export const describeFilterAsJs = (expression: Expression, row = "x"): ParameterisedQuery => {
     const parameters: unknown[] = [];
 
     const hold = (value: unknown): string => {
@@ -76,7 +76,7 @@ export const describeFilterAsJs = (expression: Expression): ParameterisedQuery =
         }
 
         if (isPropertyExpression(part)) {
-            return renderProperty(part);
+            return renderProperty(part, row);
         }
 
         if (isValueExpression(part)) {
@@ -190,7 +190,7 @@ export const parameteriseDocument = (document: unknown): ParameterisedQuery => {
             const entries = Object.entries(value as Record<string, unknown>)
                 .map(([key, nested]) => `${JSON.stringify(key)}: ${render(nested)}`);
 
-            return `{ ${entries.join(", ")} }`;
+            return entries.length === 0 ? "{}" : `{ ${entries.join(", ")} }`;
         }
 
         return JSON.stringify(value) ?? String(value);
@@ -199,53 +199,46 @@ export const parameteriseDocument = (document: unknown): ParameterisedQuery => {
     return { text: render(document), parameters };
 };
 
+export type DescribedFilters = ParameterisedQuery & {
+    /** Why a filter is not shown as an expression, one entry per filter that could not be parsed. */
+    notes: string[];
+};
+
 /**
- * Every filter on a query, as one description.
+ * Every filter on a query, as the body of one JavaScript predicate over `row`.
  *
- * Filters accumulate — `.where(a).where(b)` is `a && b` — so they are reported as one predicate
- * rather than several, which is how the caller thinks of them and how a SQL plugin renders them
- * into one `WHERE`. Parameters run left to right across the whole thing, matching the text.
- *
- * A filter that could not be parsed falls back to its source. Mixing the two is deliberate: one
- * unparsable filter does not make the others unreadable, and seeing which one it was is the
- * point.
+ * Filters accumulate, so `.where(a).where(b)` is `a && b`. Parameters run left to right across
+ * the whole body, matching the text. A filter that could not be parsed is written as a call of
+ * the caller's own function on `row`, and the reason goes in `notes`.
  */
 export const describeFilters = (
-    filters: readonly { expression: Expression; filter?: unknown }[]
-): ParameterisedQuery => {
+    filters: readonly { expression: Expression; filter?: unknown }[],
+    row = "x"
+): DescribedFilters => {
     const parameters: unknown[] = [];
+    const notes: string[] = [];
 
     const parts = filters.map(entry => {
-        const described = entry.expression?.type === "not-parsable"
-            ? describeUnparsableFilter(entry.filter, (entry.expression as NotParsableExpression).reason)
-            : describeFilterAsJs(entry.expression);
+        if (entry.expression?.type === "not-parsable") {
+            const described = describeUnparsableFilter(entry.filter, row, (entry.expression as NotParsableExpression).reason);
 
-        const describedParameters = described.parameters;
+            notes.push(described.note);
 
-        for (let i = 0; i < describedParameters.length; i++) {
-            parameters.push(describedParameters[i]);
+            return described.text;
         }
+
+        const described = describeFilterAsJs(entry.expression, row);
+
+        parameters.push(...described.parameters);
 
         return described.text;
     });
 
-    if (parts.length === 0) {
-        return { text: "(no filter)", parameters: [] };
-    }
-
-    return { text: parts.length === 1 ? parts[0] : parts.join(" && "), parameters };
+    return { text: parts.join(" && "), parameters, notes };
 };
 
-/**
- * A predicate core could not parse, shown as the caller wrote it.
- *
- * This is the case where the source matters most: an unparsable filter is why the query did not
- * push down, and the reason codes say that it happened without showing what it was. There are no
- * parameters — nothing was extracted, because nothing was understood.
- */
-export const describeUnparsableFilter = (filter: unknown, reason?: string): ParameterisedQuery => ({
-    text: typeof filter === "function"
-        ? `${String(filter)} — ${reason ?? "could not be parsed"}, evaluated in memory`
-        : "(not parsable)",
-    parameters: [],
+/** A predicate core could not parse, written as a call of the caller's function on `row`. */
+export const describeUnparsableFilter = (filter: unknown, row = "x", reason?: string): { text: string; note: string } => ({
+    text: typeof filter === "function" ? `(${String(filter)})(${row})` : "true",
+    note: `a filter could not be parsed (${reason ?? "unsupported syntax"}), so it ran as JavaScript`,
 });

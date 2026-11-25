@@ -100,7 +100,7 @@ describe('HttpDbPlugin', () => {
 
         plugin.query(event, (result) => {
             expect(result.ok).toBe(Result.SUCCESS);
-            expect(event.executedQueries).toEqual([{ text: 'GET https://api.test/httpPlugin' }]);
+            expect(event.executedQueries).toEqual([{ text: 'GET https://api.test/httpPlugin', language: 'http' }]);
             done();
         });
     });

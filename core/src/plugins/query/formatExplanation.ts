@@ -211,9 +211,13 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
 
     for (let i = 0; i < executedQueries.length; i++) {
         const executed = executedQueries[i];
-        const textLines = executed.text.split("\n");
+        const textLines = executed.text === "" ? [] : executed.text.split("\n");
 
         lines.push("");
+
+        if (executed.note != null) {
+            lines.push(`    // ${executed.note}`);
+        }
 
         for (let j = 0; j < textLines.length; j++) {
             lines.push(`    ${textLines[j]}`);

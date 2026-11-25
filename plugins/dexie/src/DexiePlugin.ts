@@ -48,6 +48,21 @@ export type DexiePluginOptions = {
 
 const countCompatibleOptions: readonly QueryOptionName[] = ["filter", "sort", "count"];
 
+
+const dexieTable = (name: string) => /^[A-Za-z_$][\w$]*$/.test(name) ? `db.${name}` : `db.table(${JSON.stringify(name)})`;
+
+const readNote = (seeks: number, walksIndex: boolean, hasFilter: boolean): string => {
+    if (seeks > 0) {
+        const seek = seeks > 1 ? `${seeks} IndexedDB index seeks` : "an IndexedDB index seek";
+
+        return hasFilter ? `${seek}, then a JavaScript filter over the rows it found` : seek;
+    }
+
+    const walk = walksIndex ? "an IndexedDB index walk in key order" : "a full table walk, no index";
+
+    return hasFilter ? `${walk}, with a JavaScript filter` : walk;
+};
+
 export class DexiePlugin implements IDbPlugin, Disposable {
 
     private readonly dbName: string;
@@ -397,6 +412,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             translator.pushedDown.take = canPushDownWindow;
             translator.pushedDown.sort = sortSeed != null;
 
+            const windowSteps: string[] = [];
+            const windowParameters: unknown[] = [];
+
             options.forEach(option => {
 
                 // Everything after a reported option runs in the datastore, and a window applied
@@ -408,6 +426,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 if (option.name === "skip") {
                     if (canPushDownWindow) {
                         collections = collections.map(collection => collection.offset(option.value));
+                        windowSteps.push("offset(?)");
+                        windowParameters.push(option.value);
                     }
                     return
                 }
@@ -415,6 +435,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 if (option.name === "take") {
                     if (canPushDownWindow) {
                         collections = collections.map(collection => collection.limit(option.value));
+                        windowSteps.push("limit(?)");
+                        windowParameters.push(option.value);
                     }
                     return
                 }
@@ -428,6 +450,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     if (selectedProperties.every(x => x.indexes.length > 0)) {
                         translator.pushedDown.distinct = true;
                         collections = collections.map(collection => collection.distinct());
+                        windowSteps.push("distinct()");
                     }
                     return
                 }
@@ -437,26 +460,27 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
             const seek = indexSeed != null ? describeSeed(indexSeed) : null;
 
-            const explain = (steps: string[]) => {
-                const parameters = [...(seek?.parameters ?? []), ...described.parameters];
+            const explain = (terminal: string) => {
+                const parameters = [...(seek?.parameters ?? []), ...described.parameters, ...windowParameters];
+                const read = seek != null ? seek.text : sortSeed != null ? describeSort(sortSeed) : "toCollection()";
 
                 event.executedQueries.push({
                     text: [
-                        seek != null
-                            ? `${collectionName}.${seek.text} — ${collections.length > 1 ? `${collections.length} IndexedDB index seeks` : "IndexedDB index seek"}`
-                            : sortSeed != null
-                                ? `${collectionName}.${describeSort(sortSeed)} — IndexedDB index walk in key order`
-                                : `${collectionName}.toCollection()`,
-                        ...(hasFilter ? [`filter(${described.text})${indexSeed != null ? " — JavaScript predicate over the seeked rows" : " — JavaScript predicate over a full cursor walk, no index"}`] : []),
-                        ...steps
+                        dexieTable(collectionName),
+                        read,
+                        ...(hasFilter ? [`filter(x => ${described.text})`] : []),
+                        ...windowSteps,
+                        terminal
                     ].join("."),
-                    parameters: parameters.length > 0 ? parameters : undefined
+                    parameters: parameters.length > 0 ? parameters : undefined,
+                    language: "dexie",
+                    note: [readNote(seek != null ? collections.length : 0, sortSeed != null, hasFilter), ...described.notes].join("; ")
                 });
             };
 
             if (canPushDownCount) {
                 Promise.all(collections.map(collection => collection.count())).then(counts => {
-                    explain(["count()"]);
+                    explain("count()");
                     d(PluginEventResult.success(event.id, new TranslatedSingleValue<TShape>(counts.reduce((sum, count) => sum + count, 0), true)));
                 }).catch(e => d(PluginEventResult.error(event.id, e)));
                 return;
@@ -477,11 +501,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                  * The "no index" note stays on the walk path: it is the fact that separates a slow
                  * backend from a silent memory fallback when comparing against SQL engines.
                  */
-                explain([
-                    ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
-                    ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
-                    ...(translator.pushedDown.distinct ? ["distinct()"] : [])
-                ]);
+                explain("toArray()");
 
                 if (reviveDates != null) {
                     for (let i = 0, length = data.length; i < length; i++) {
