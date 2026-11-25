@@ -33,7 +33,6 @@ import { addOutcomes, bodyForUnits, NOTHING_DELIVERED, QueuedWriteSender, type D
 import { runWithOnError, statusOf, type ActionKit, type Settlement } from './requestFailures';
 import { emitEvent, type SwrRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
 import { baseOf, createConflictSettler, isConflictResponse, sameKeys, type ConflictHandlingOptions, type ResolvedRow } from './conflictSettler';
-import { isRecord } from './records';
 import { queryByKeys } from './keyQuery';
 
 /** What a sync moved. Returned by `syncNow()` and reported as the `synced` event. */
@@ -146,6 +145,16 @@ interface RevalidateClassification {
 
 /** Single-schema task for bulk persist: POST payload + data needed to finalize on success. */
 
+
+
+/** A schema collection holding just `schema`, for an event about that one collection. */
+const schemasOf = (schema: CompiledSchema<UnknownRecord>): SchemaCollection => {
+    const schemas = new SchemaCollection();
+
+    schemas.set(schema.id, schema);
+
+    return schemas;
+};
 
 export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly httpPlugin: HttpDbPlugin;
@@ -773,18 +782,14 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
     /** Writes the row a conflict resolver settled on into the SWR store, and tells subscribers. */
     private applyResolvedRow(schema: CompiledSchema<UnknownRecord>, row: ResolvedRow): Promise<void> {
-        const schemas = new SchemaCollection();
-
-        schemas.set(schema.id, schema);
-
-        return this.applyRevalidatePersist(schemas, schema, 'put' in row
+        return this.applyRevalidatePersist(schemasOf(schema), schema, 'put' in row
             ? { adds: [], updates: [{ entity: row.put, changeType: 'markedDirty', delta: {} }], removes: [] }
             : { adds: [], updates: [], removes: [row.remove] });
     }
 
     /** Reads one row from the server by its key, through the same GET as a filtered read. */
     private async fetchRemoteRow(schema: CompiledSchema<UnknownRecord>, local: UnknownRecord): Promise<UnknownRecord | null> {
-        const [row] = await queryByKeys(this.httpPlugin, this.lastSeenSchemas ?? new SchemaCollection(), schema, [local], HttpSwrDbPlugin.name);
+        const [row] = await queryByKeys(this.httpPlugin, schemasOf(schema), schema, [local], HttpSwrDbPlugin.name);
 
         return row ?? null;
     }
@@ -812,7 +817,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
         for (const [schemaId, changes] of event.operation) {
             const schema = event.schemas.get<UnknownRecord>(schemaId);
-            const updates = changes.updates.filter(update => isRecord(update.entity));
+            const updates = changes.updates;
             const stored = await queryByKeys(this.swrStore, event.schemas, schema, updates.map(update => update.entity), HttpSwrDbPlugin.name);
 
             for (const update of updates) {

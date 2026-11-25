@@ -238,7 +238,7 @@ export class UnsyncedQueue {
 
         // A partial update payload has to merge with whatever that row already carries: the row
         // is replaced, so an earlier edit's fields would otherwise never reach the server.
-        const updating = changes.some((c) => c.kind === 'update' && (c.payload != null || c.base != null));
+        const updating = changes.some((c) => c.payload != null || c.base != null);
         const existing = updating ? await this.updatesByRowId(collectionName) : new Map<string, ExistingUpdate>();
 
         const adds = changes.map((c) => {
@@ -250,7 +250,7 @@ export class UnsyncedQueue {
             const rowId = rowIdOf(collectionName, c.kind, recordIds);
             const previous = existing.get(rowId);
             const payload = previous != null
-                ? mergeUpdatePayloads(previous.payload, c.payload ?? null)
+                ? mergeUpdatePayloads(previous.payload, c.payload)
                 : c.payload ?? null;
             const base = { ...c.base, ...previous?.base };
 

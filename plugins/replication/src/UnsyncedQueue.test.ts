@@ -474,6 +474,9 @@ describe('UnsyncedQueue merge bases', () => {
         await queue.addMany(testSchema as never, [{ kind: 'add', entity: { id: 'a', name: 'A' } }]);
         expect(updatesByRowId).not.toHaveBeenCalled();
 
+        await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: null }]);
+        expect(updatesByRowId).not.toHaveBeenCalled();
+
         await queue.addMany(testSchema as never, [{ kind: 'update', entity: { id: 'a', name: 'B' }, payload: null, base: { name: 'A' } }]);
         expect(updatesByRowId).toHaveBeenCalledTimes(1);
 
@@ -486,7 +489,7 @@ describe('UnsyncedQueue merge bases', () => {
         await writeQueueRows(queueStore, [{ id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'update', entityJson: '{"id":"a","name":"B"}', baseJson: '{not json' }]);
 
         expect(await unitBase()).toEqual([{}]);
-        expect(warn.mock.calls.some(call => String(call[0]).includes('failed to parse baseJson'))).toBe(true);
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse baseJson'), { rowId: '1' });
         warn.mockRestore();
     });
 

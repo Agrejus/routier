@@ -80,8 +80,7 @@ export const baseOf = (schema: Schema, stored: UnknownRecord | undefined, delta:
     return Object.fromEntries(columns.filter(column => column in stored).map(column => [column, stored[column]]));
 };
 
-const appBase = (schema: Schema, base: UnknownRecord) =>
-    schema.deserializePartial(base, rootColumns(schema).filter(property => property.getResolvedName() in base));
+const appBase = (schema: Schema, base: UnknownRecord) => schema.deserializePartial(base, rootColumns(schema));
 
 const same = <TValue>(left: TValue, right: TValue) => JSON.stringify(left) === JSON.stringify(right);
 
