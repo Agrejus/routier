@@ -44,6 +44,7 @@ Always sort before `skip()` and `take()`. Without a stable order, the same row c
 - Write `.cursor()` after the sorts and before `.take()`. It throws when there is no sort before it, or when `.skip()`, `.take()` or `.map()` comes first.
 - Rows that tie on every sort are ordered by the key. So no row is skipped or shown twice, even when many rows share a `createdAt`.
 - Use the same query for every page, including the first. That keeps the order the same on every page.
+- `.cursor()` also works on a live query: `.subscribe().sort(...).cursor(lastRow).take(20)` keeps that page up to date.
 - When every sort is a property that cannot be null, the database runs the cursor filter. A sort on a nullable property, or on a computed value, still works, but the filter runs in memory.
 
 ## Simple Take and Skip

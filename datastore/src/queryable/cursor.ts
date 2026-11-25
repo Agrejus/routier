@@ -6,7 +6,7 @@ import { UnknownRecord } from "@routier/core/utilities";
 type SortOption<T extends {}> = QueryOption<T, "sort">;
 type SortValue<T extends {}> = SortOption<T>["value"];
 
-const BEFORE_CURSOR_NOT_ALLOWED: QueryOptionName[] = ["skip", "take", "map", "group", "join", "nearest"];
+const BEFORE_CURSOR_NOT_ALLOWED: QueryOptionName[] = ["skip", "take", "map", "nearest"];
 
 const assertCursorCanFollow = <T extends {}>(options: QueryOptionsCollection<T>): void => {
     const blocking = BEFORE_CURSOR_NOT_ALLOWED.find(name => options.has(name));
@@ -33,7 +33,7 @@ const keySort = <T extends {}>(property: PropertyInfo<T>): SortValue<T> => ({
 });
 
 const addKeySorts = <T extends {}>(options: QueryOptionsCollection<T>, keys: readonly PropertyInfo<T>[]): void => {
-    const sorts = options.getValues("sort") ?? [];
+    const sorts = options.getValues("sort");
 
     for (const key of keys) {
         if (sorts.some(sort => sortsBy(sort, key)) === false) {
@@ -50,8 +50,15 @@ const assertCursorHasKeys = <T extends {}>(keys: readonly PropertyInfo<T>[], cur
     }
 };
 
-const isPushable = <T extends {}>(sort: SortValue<T>, property: PropertyInfo<T>): boolean =>
-    sort.isDirectProperty === true && property.isNullable === false && property.isOptional === false && property.hasNullableParents === false;
+const pushableProperty = <T extends {}>(sort: SortValue<T>): PropertyInfo<T> | null => {
+    const property = sort.isDirectProperty === true ? sort.property : null;
+
+    if (property == null || property.isNullable || property.isOptional || property.hasNullableParents) {
+        return null;
+    }
+
+    return property;
+};
 
 const compared = <T extends {}>(sort: SortValue<T>, property: PropertyInfo<T>, value: T[keyof T]) => new ComparatorExpression({
     comparator: sort.direction === QueryOrdering.Descending ? "less-than" : "greater-than",
@@ -89,9 +96,9 @@ const boundsOf = <T extends {}>(sorts: SortValue<T>[], cursor: T): Bound<T>[] | 
     const bounds: Bound<T>[] = [];
 
     for (const sort of sorts) {
-        const property = sort.property;
+        const property = pushableProperty(sort);
 
-        if (property == null || isPushable(sort, property) === false) {
+        if (property == null) {
             return null;
         }
 

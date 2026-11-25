@@ -11,6 +11,9 @@ const postSchema = s.define("cursor_posts", {
     author: s.string(),
     likes: s.number(),
     pinned: s.number().nullable(),
+    nick: s.string().optional(),
+    profile: s.object({ rank: s.number() }).optional(),
+    embedding: s.vector(2),
 }).compile();
 
 const scoreSchema = s.define("cursor_scores", {
@@ -35,12 +38,12 @@ afterEach(() => {
 });
 
 const POSTS: Post[] = [
-    { id: "a", author: "x", likes: 5, pinned: null },
-    { id: "b", author: "y", likes: 3, pinned: 1 },
-    { id: "c", author: "x", likes: 5, pinned: 2 },
-    { id: "d", author: "y", likes: 1, pinned: null },
-    { id: "e", author: "x", likes: 5, pinned: 3 },
-    { id: "f", author: "y", likes: 3, pinned: null },
+    { id: "a", author: "x", likes: 5, pinned: null, embedding: [1, 0] },
+    { id: "b", author: "y", likes: 3, pinned: 1, embedding: [0, 1] },
+    { id: "c", author: "x", likes: 5, pinned: 2, embedding: [1, 1] },
+    { id: "d", author: "y", likes: 1, pinned: null, embedding: [0, 0] },
+    { id: "e", author: "x", likes: 5, pinned: 3, embedding: [1, 0] },
+    { id: "f", author: "y", likes: 3, pinned: null, embedding: [0, 1] },
 ];
 
 const seeded = async () => {
@@ -149,6 +152,33 @@ describe("cursor", () => {
         expect(ids).toEqual(["e", "f"]);
     });
 
+    it("adds the key sort when the query sorts by a value computed from the key", async () => {
+        const store = await seeded();
+        const { explanation } = await store.posts.sort(p => p.id.toUpperCase()).cursor(null).explain().toArrayAsync();
+
+        expect(explanation.executionSteps.flatMap(step => step.options).filter(option => option.name === "sort")).toHaveLength(2);
+    });
+
+    it("adds no key sort when one of several sorts is the key", async () => {
+        const store = await seeded();
+        const { explanation } = await store.posts.sort(p => p.author).sort(p => p.id).cursor(null).explain().toArrayAsync();
+
+        expect(explanation.executionSteps.flatMap(step => step.options).filter(option => option.name === "sort")).toHaveLength(2);
+    });
+
+    it("pages a live query", async () => {
+        const store = await seeded();
+        let stop: () => void = () => undefined;
+        const ids = await new Promise<string[]>(resolve => {
+            stop = store.posts.subscribe().sort(p => p.id).cursor(POSTS[3]).toArray(result => {
+                resolve(result.ok === "success" ? result.data.map(row => row.id) : []);
+            });
+        });
+
+        stop();
+        expect(ids).toEqual(["e", "f"]);
+    });
+
     it("needs a sort before it", async () => {
         const store = await seeded();
 
@@ -158,10 +188,17 @@ describe("cursor", () => {
     it.each([
         ["take", (store: Store) => store.posts.sort(p => p.id).take(2)],
         ["skip", (store: Store) => store.posts.sort(p => p.id).skip(2)],
+        ["nearest", (store: Store) => store.posts.sort(p => p.id).nearest(p => p.embedding, [1, 0], 2)],
     ])("must come before .%s()", async (name, query) => {
         const store = await seeded();
 
         expect(() => query(store).cursor(POSTS[0])).toThrow(`.cursor() must come before .${name}()`);
+    });
+
+    it("must come before .map()", async () => {
+        const store = await seeded();
+
+        expect(() => store.posts.sort(p => p.id).map(p => ({ id: p.id })).cursor({ id: "a" })).toThrow(".cursor() must come before .map()");
     });
 
     it("needs the key of the row it continues from", async () => {
@@ -211,11 +248,28 @@ describe("the cursor filter", () => {
         });
     });
 
-    it("runs in memory for a nullable sort", async () => {
+    it("runs in memory for a nullable sort, and says why", async () => {
         const store = await seeded();
         const step = await filterStep(store.posts.sort(p => p.pinned).cursor(POSTS[1]).explain().toArrayAsync());
 
-        expect(step).toEqual({ executedIn: "memory", expression: expect.objectContaining({ type: "not-parsable" }) });
+        expect(step).toEqual({
+            executedIn: "memory",
+            expression: { type: "not-parsable", reason: "a cursor over a computed, nullable or optional sort is compared in memory" },
+        });
+    });
+
+    it("runs in memory for an optional sort", async () => {
+        const store = await seeded();
+        const step = await filterStep(store.posts.sort(p => p.nick).cursor(POSTS[1]).explain().toArrayAsync());
+
+        expect(step.executedIn).toBe("memory");
+    });
+
+    it("runs in memory for a sort inside an optional object", async () => {
+        const store = await seeded();
+        const step = await filterStep(store.posts.sort(p => p.profile?.rank).cursor(POSTS[1]).explain().toArrayAsync());
+
+        expect(step.executedIn).toBe("memory");
     });
 
     it("runs in memory for a computed sort", async () => {
