@@ -59,8 +59,8 @@ attribute unset.
 
 When a query filters on a [sensitive](/concepts/schema/modifiers/README#sensitive) property,
 `db.query.text` carries no values. A statement with separate parameters keeps its text, which
-holds only placeholders. A statement that carries its values inline, such as a MongoDB filter or
-an HTTP query string, is replaced by `[hidden: this query filters on a sensitive property]`.
+holds only placeholders. A statement that carries its values inline, such as an HTTP query string,
+is replaced by `[hidden: this query filters on a sensitive property]`.
 
 ## Failure semantics
 

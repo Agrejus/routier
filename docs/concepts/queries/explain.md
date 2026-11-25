@@ -132,7 +132,7 @@ All built-in plugins report.
 `executedQueries.parameters` carries live query values. Treat a logged explanation like a logged query.
 :::
 
-A value compared with a [sensitive](/concepts/schema/modifiers/README#sensitive) property shows as `[redacted]` in the filter detail. When a query filters on a sensitive property, every parameter shows as `[redacted]`. A statement that carries its values inline, such as a MongoDB filter or an HTTP query string, is replaced by a short note.
+A value compared with a [sensitive](/concepts/schema/modifiers/README#sensitive) property shows as `[redacted]` in the filter detail. When a query filters on a sensitive property, every parameter shows as `[redacted]`. A statement that carries its values inline, such as an HTTP query string, is replaced by a short note.
 
 ## Limits
 

@@ -155,7 +155,7 @@ Keeps the value out of what Routier itself prints and reports. Use it for values
 Routier hides the value in:
 
 - **Logs:** rows in Routier's log lines show `[redacted]` in place of the value.
-- **`.explain()`:** a filter value compared with the property shows `[redacted]`. When a query filters on a sensitive property, its statement parameters show `[redacted]`. A statement that carries its values inline, such as a MongoDB filter or an HTTP query string, is replaced by a short note.
+- **`.explain()`:** a filter value compared with the property shows `[redacted]`. When a query filters on a sensitive property, its statement parameters show `[redacted]`. A statement that carries its values inline, such as an HTTP query string, is replaced by a short note.
 - **OpenTelemetry:** `db.query.text` follows the same rule as `.explain()`.
 - **Devtools:** the value shows as `••••••` until you choose **Show sensitive values**.
 
