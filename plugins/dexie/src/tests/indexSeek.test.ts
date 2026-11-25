@@ -129,8 +129,13 @@ describe('Dexie index seek', () => {
         expect(whole.data).toBe(ROWS);
         expect(executedQueriesOf(whole.explanation)[0].text).toBe('db.seek_orders.toCollection().count()');
         expect(walked.data).toBe(6);
-        expect(executedQueriesOf(walked.explanation)[0].text).toContain('toCollection().filter(');
-        expect(executedQueriesOf(walked.explanation)[0].text).toContain('.count()');
+        expect(executedQueriesOf(walked.explanation)[0]).toEqual({
+            text: 'db.seek_orders.toCollection().filter(x => x.notes === ?).count()',
+            parameters: ['note 0'],
+            language: 'dexie',
+            note: 'a full table walk, no index, with a JavaScript filter',
+        });
+        expect(executedQueriesOf(whole.explanation)[0]).toStrictEqual({ text: 'db.seek_orders.toCollection().count()', language: 'dexie', note: 'a full table walk, no index' });
     });
 
     it('leaves count to the translator when a window is in the chain', async () => {
@@ -243,12 +248,25 @@ describe('Dexie index seek', () => {
         expect(executedQueriesOf(explanation)[0].text).toContain('db.seek_orders.toCollection().filter(x => ');
     });
 
+    it('takes the distinct values of an indexed property, not one per row', async () => {
+        const all = await store.orders.map(x => x.status).toArrayAsync();
+        const { data, explanation } = await store.orders.map(x => x.status).explain().distinctAsync();
+
+        expect([...data].sort()).toEqual([...new Set(all)].sort());
+        expect(executedQueriesOf(explanation)[0].text).toBe('db.seek_orders.toCollection().toArray()');
+    });
+
     it('orders by the index and windows in Dexie when there is no filter', async () => {
         const asc = await store.orders.sort(x => x.score).skip(3).take(4).explain().toArrayAsync();
         const desc = await store.orders.sortDescending(x => x.createdAt).take(2).explain().toArrayAsync();
 
         expect(asc.data.map(x => x.score)).toEqual([3, 4, 5, 6]);
-        expect(executedQueriesOf(asc.explanation)[0].text).toBe('db.seek_orders.orderBy("score").offset(?).limit(?).toArray()');
+        expect(executedQueriesOf(asc.explanation)[0]).toEqual({
+            text: 'db.seek_orders.orderBy("score").offset(?).limit(?).toArray()',
+            parameters: [3, 4],
+            language: 'dexie',
+            note: 'an IndexedDB index walk in key order',
+        });
         expect(desc.data.map(x => x.amount)).toEqual([29, 28]);
         expect(executedQueriesOf(desc.explanation)[0].text).toBe('db.seek_orders.orderBy("createdAt").reverse().limit(?).toArray()');
     });

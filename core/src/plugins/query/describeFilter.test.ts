@@ -211,6 +211,10 @@ describe('describeUnparsableFilter', () => {
         expect(described.note).toContain('could not be parsed');
     });
 
+    it('says the syntax was unsupported when the parser gave no reason', () => {
+        expect(describeUnparsableFilter((x: any) => x.age > 1).note).toBe('a filter could not be parsed (unsupported syntax), so it ran as JavaScript');
+    });
+
     it('calls it on x when no row name is given', () => {
         expect(describeUnparsableFilter((x: any) => x.age > 1).text).toMatch(/\)\(x\)$/);
     });

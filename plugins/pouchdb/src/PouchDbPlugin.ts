@@ -1,8 +1,9 @@
 import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
+import { fullReadQuery, indexedViewQuery, remoteScanQuery, temporaryViewQuery } from './explainQuery';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, type DescribedFilters, EntityUpdateInfo, type ExecutedQuery, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, type DescribedFilters, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -56,48 +57,6 @@ type MatchingIndex = {
 
 const filtersOf = <TEntity extends {}, TShape>(event: DbPluginQueryEvent<TEntity, TShape>): DescribedFilters =>
     describeFilters(event.operation.options.get("filter").map(item => item.option.value), "doc");
-
-const withParameters = (described: DescribedFilters, before: unknown[] = []) => {
-    const parameters = [...before, ...described.parameters];
-
-    return parameters.length > 0 ? { parameters } : {};
-};
-
-const viewKey = (options: PouchDB.Query.Options<{}, {}>): { text: string; parameters: unknown[] } => {
-    if (options.keys != null) {
-        return { text: `keys: [${options.keys.map(() => "?").join(", ")}], `, parameters: options.keys };
-    }
-
-    return "key" in options ? { text: "key: ?, ", parameters: [options.key] } : { text: "", parameters: [] };
-};
-
-const filteredRows = (described: DescribedFilters) =>
-    described.text === "" ? "" : `\n  .then(({ rows }) => rows.map(row => row.doc).filter(doc => ${described.text}))`;
-
-const indexedViewQuery = (view: string, options: PouchDB.Query.Options<{}, {}>, described: DescribedFilters): ExecutedQuery => {
-    const key = viewKey(options);
-
-    return {
-        text: `db.query(${JSON.stringify(view)}, { ${key.text}include_docs: true })${filteredRows(described)}`,
-        ...withParameters(described, key.parameters),
-        language: "pouchdb",
-        note: ["an indexed view query", ...described.notes].join("; "),
-    };
-};
-
-const remoteScanQuery = (described: DescribedFilters): ExecutedQuery => ({
-    text: `db.allDocs({ include_docs: true })${filteredRows(described)}`,
-    ...withParameters(described),
-    language: "pouchdb",
-    note: ["a full read of a remote database, filtered in JavaScript", ...described.notes].join("; "),
-});
-
-const temporaryViewQuery = (described: DescribedFilters): ExecutedQuery => ({
-    text: `db.query((doc, emit) => {\n  if (${described.text}) emit(doc._id, doc);\n})`,
-    ...withParameters(described),
-    language: "pouchdb",
-    note: ["a temporary view: PouchDB runs the map function over every document", ...described.notes].join("; "),
-});
 
 export class PouchDbPlugin implements IDbPlugin {
 
@@ -1096,7 +1055,7 @@ export class PouchDbPlugin implements IDbPlugin {
             }).then(response => {
 
                 try {
-                    event.executedQueries.push({ text: "db.allDocs({ include_docs: true })", language: "pouchdb", note: "a full database read, no index" });
+                    event.executedQueries.push(fullReadQuery());
 
                     const data = response.rows.map(w => w.doc);
                     const translated = translator.translate(data);

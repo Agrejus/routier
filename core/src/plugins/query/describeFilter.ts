@@ -219,7 +219,7 @@ export const describeFilters = (
     const notes: string[] = [];
 
     const parts = filters.map(entry => {
-        if (entry.expression?.type === "not-parsable") {
+        if (entry.expression.type === "not-parsable") {
             const described = describeUnparsableFilter(entry.filter, row, (entry.expression as NotParsableExpression).reason);
 
             notes.push(described.note);

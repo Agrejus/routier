@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema, dexieKey } from "./utils";
 import { stampAddedEtags, stampUpdatedEtags } from "./etags";
+import { dexieQuery } from "./explainQuery";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -48,20 +49,6 @@ export type DexiePluginOptions = {
 
 const countCompatibleOptions: readonly QueryOptionName[] = ["filter", "sort", "count"];
 
-
-const dexieTable = (name: string) => /^[A-Za-z_$][\w$]*$/.test(name) ? `db.${name}` : `db.table(${JSON.stringify(name)})`;
-
-const readNote = (seeks: number, walksIndex: boolean, hasFilter: boolean): string => {
-    if (seeks > 0) {
-        const seek = seeks > 1 ? `${seeks} IndexedDB index seeks` : "an IndexedDB index seek";
-
-        return hasFilter ? `${seek}, then a JavaScript filter over the rows it found` : seek;
-    }
-
-    const walk = walksIndex ? "an IndexedDB index walk in key order" : "a full table walk, no index";
-
-    return hasFilter ? `${walk}, with a JavaScript filter` : walk;
-};
 
 export class DexiePlugin implements IDbPlugin, Disposable {
 
@@ -305,19 +292,6 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return merged;
     }
 
-    private getSelectedProperties<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>) {
-
-        const { options } = event.operation;
-
-        const map = options.getLast("map");
-
-        if (map != null) {
-
-            return map.value.fields.map(x => x.property!);
-        }
-
-        return event.operation.schema.properties;
-    }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         // Two ordinary queries through this same path — outer first, so its keys narrow the inner
@@ -440,20 +414,6 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     }
                     return
                 }
-
-                if (option.name === "distinct") {
-
-                    const selectedProperties = this.getSelectedProperties(event);
-
-                    // distinct only works on properties that have an index,
-                    // convert database operation to memory operation
-                    if (selectedProperties.every(x => x.indexes.length > 0)) {
-                        translator.pushedDown.distinct = true;
-                        collections = collections.map(collection => collection.distinct());
-                        windowSteps.push("distinct()");
-                    }
-                    return
-                }
             });
 
             const described = describeFilters([...predicateFilters].map(filter => filter.value));
@@ -461,21 +421,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const seek = indexSeed != null ? describeSeed(indexSeed) : null;
 
             const explain = (terminal: string) => {
-                const parameters = [...(seek?.parameters ?? []), ...described.parameters, ...windowParameters];
-                const read = seek != null ? seek.text : sortSeed != null ? describeSort(sortSeed) : "toCollection()";
-
-                event.executedQueries.push({
-                    text: [
-                        dexieTable(collectionName),
-                        read,
-                        ...(hasFilter ? [`filter(x => ${described.text})`] : []),
-                        ...windowSteps,
-                        terminal
-                    ].join("."),
-                    parameters: parameters.length > 0 ? parameters : undefined,
-                    language: "dexie",
-                    note: [readNote(seek != null ? collections.length : 0, sortSeed != null, hasFilter), ...described.notes].join("; ")
-                });
+                event.executedQueries.push(dexieQuery({
+                    table: collectionName,
+                    read: seek?.text ?? (sortSeed != null ? describeSort(sortSeed) : "toCollection()"),
+                    filter: hasFilter ? described.text : null,
+                    steps: windowSteps,
+                    terminal,
+                    parameters: [...(seek?.parameters ?? []), ...described.parameters, ...windowParameters],
+                    seeks: seek != null ? collections.length : 0,
+                    walksIndex: sortSeed != null,
+                }));
             };
 
             if (canPushDownCount) {

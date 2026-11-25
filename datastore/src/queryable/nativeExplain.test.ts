@@ -80,5 +80,6 @@ describe("a cache hit", () => {
 
         expect(executedQueriesOf(explanation)).toEqual([{ text: "", note: "cache hit: no query ran" }]);
         expect(formatExplanation(explanation)).toContain("// cache hit: no query ran");
+        expect(formatExplanation(explanation).split("\n")).not.toContain("    ");
     });
 });

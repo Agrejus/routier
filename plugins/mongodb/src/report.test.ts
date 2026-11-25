@@ -19,6 +19,10 @@ describe("findReport", () => {
         });
     });
 
+    it("writes an undefined value as a parameter", () => {
+        expect(findReport("orders", { status: undefined }, {})).toEqual({ text: 'db.orders.find({ "status": ? })', parameters: [undefined], language: "mongodb" });
+    });
+
     it("leaves out options there are none of", () => {
         expect(findReport("orders", { status: null }, {}).text).toBe('db.orders.find({ "status": ? })');
     });

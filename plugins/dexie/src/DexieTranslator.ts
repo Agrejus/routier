@@ -6,7 +6,6 @@ export class DexieTranslator<TRoot extends {}, TShape> extends JsonTranslator<TR
         sort: false,
         skip: false,
         take: false,
-        distinct: false,
     };
 
     constructor(query: IQuery<TRoot, TShape>) {
@@ -39,13 +38,5 @@ export class DexieTranslator<TRoot extends {}, TShape> extends JsonTranslator<TR
         }
 
         return super.take(data, option);
-    }
-
-    override distinct<TResult>(data: unknown, option: QueryOption<TShape, "distinct">): TResult {
-        if (this.pushedDown.distinct) {
-            return data as TResult;
-        }
-
-        return super.distinct(data, option);
     }
 }

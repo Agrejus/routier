@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, memoryJoinQuery, memoryReadQuery, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -60,11 +60,6 @@ const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
     return { value: right.value as IdType };
 }
 
-
-const returnedRecords = (count: number) => `returned ${count} in-memory ${count === 1 ? "record" : "records"}`;
-
-/** A collection name as a JavaScript expression: the name itself when it is an identifier. */
-const javascriptName = (name: string) => /^[A-Za-z_$][\w$]*$/.test(name) ? name : `collections[${JSON.stringify(name)}]`;
 
 export abstract class EphemeralDataPlugin implements IDbPlugin {
 
@@ -390,16 +385,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 innerRows.push(cloneRecord(record));
             }
 
-            const records = returnedRecords(innerRows.length);
-            const innerName = javascriptName(innerSchema.collectionName);
-
-            event.executedQueries.push(outerKeys == null
-                ? { text: innerName, language: "javascript", note: `the join's inner side: ${records}, a full scan` }
-                : {
-                    text: `${innerName}.filter(x => outerKeys.has(x.${keyColumn}))`,
-                    language: "javascript",
-                    note: `the join's inner side: ${records}, narrowed by ${outerKeys.size} outer ${outerKeys.size === 1 ? "key" : "keys"}`
-                });
+            event.executedQueries.push(memoryJoinQuery(innerSchema.collectionName, keyColumn, innerRows.length, outerKeys?.size ?? null));
 
             done({ ok: "success", innerSide: { innerSchema, innerRows } });
         });
@@ -537,15 +523,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  *
                  * Before the inner side, to match execution order.
                  */
-                const described = describeFilters(executedFilterValues(operation.options));
-                const collectionName = javascriptName(operation.schema.collectionName);
-
-                event.executedQueries.push({
-                    text: described.text === "" ? collectionName : `${collectionName}.filter(x => ${described.text})`,
-                    parameters: described.parameters.length > 0 ? described.parameters : undefined,
-                    language: "javascript",
-                    note: [returnedRecords(cloned.length), ...described.notes].join("; ")
-                });
+                event.executedQueries.push(memoryReadQuery(operation.schema.collectionName, describeFilters(executedFilterValues(operation.options)), cloned.length));
 
                 const joinOption = operation.options.getLast("join");
                 const outerKeys = joinOption == null || joinOption.reason !== "executed"
