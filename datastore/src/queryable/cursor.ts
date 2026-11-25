@@ -6,10 +6,9 @@ import { UnknownRecord } from "@routier/core/utilities";
 type SortOption<T extends {}> = QueryOption<T, "sort">;
 type SortValue<T extends {}> = SortOption<T>["value"];
 
-const BEFORE_CURSOR_NOT_ALLOWED: QueryOptionName[] = ["skip", "take", "map", "nearest"];
-
 const assertCursorCanFollow = <T extends {}>(options: QueryOptionsCollection<T>): void => {
-    const blocking = BEFORE_CURSOR_NOT_ALLOWED.find(name => options.has(name));
+    const notAllowedBefore: QueryOptionName[] = ["skip", "take", "map", "nearest"];
+    const blocking = notAllowedBefore.find(name => options.has(name));
 
     if (blocking != null) {
         throw new Error(`.cursor() must come before .${blocking}().  Write it right after the sorts, then .take() the page size.`);
