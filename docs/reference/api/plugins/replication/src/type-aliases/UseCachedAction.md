@@ -8,7 +8,7 @@
 
 > **UseCachedAction** = `object`
 
-Defined in: [plugins/replication/src/syncHooks.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L40)
+Defined in: [plugins/replication/src/syncHooks.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L46)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: [plugins/replication/src/syncHooks.ts:40](https://github.com/Agrejus
 
 > **useCached**(): `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L40)
+Defined in: [plugins/replication/src/syncHooks.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L46)
 
 #### Returns
 

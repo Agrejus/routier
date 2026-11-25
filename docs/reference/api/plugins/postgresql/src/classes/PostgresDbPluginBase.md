@@ -6,7 +6,7 @@
 
 # Class: PostgresDbPluginBase
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:24
+Defined in: plugins/postgres-core/dist/plugin.d.ts:25
 
 The engine-independent half of the PostgreSQL plugin.
 
@@ -29,7 +29,7 @@ WebAssembly.
 
 > **new PostgresDbPluginBase**(`driver`): `PostgresDbPluginBase`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:45
+Defined in: plugins/postgres-core/dist/plugin.d.ts:46
 
 #### Parameters
 
@@ -47,7 +47,7 @@ Defined in: plugins/postgres-core/dist/plugin.d.ts:45
 
 > `readonly` **databaseName**: `string`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:27
+Defined in: plugins/postgres-core/dist/plugin.d.ts:28
 
 See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriver`.
 
@@ -61,7 +61,7 @@ See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriv
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:78
+Defined in: plugins/postgres-core/dist/plugin.d.ts:79
 
 Executes a query operation on the database.
 
@@ -103,7 +103,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:87
+Defined in: plugins/postgres-core/dist/plugin.d.ts:88
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -135,7 +135,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:113
+Defined in: plugins/postgres-core/dist/plugin.d.ts:114
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

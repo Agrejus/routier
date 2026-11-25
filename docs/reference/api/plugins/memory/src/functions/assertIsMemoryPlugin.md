@@ -8,7 +8,7 @@
 
 > **assertIsMemoryPlugin**(`value`): `asserts value is MemoryPlugin`
 
-Defined in: [plugins/memory/src/index.ts:6](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/index.ts#L6)
+Defined in: [plugins/memory/src/index.ts:5](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/index.ts#L5)
 
 ## Parameters
 

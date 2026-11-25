@@ -8,4 +8,4 @@
 
 > **MemoryDatabase** = `Record`\<`string`, `MemoryDataCollection`\>
 
-Defined in: [plugins/memory/src/index.ts:4](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/index.ts#L4)
+Defined in: [plugins/memory/src/databases.ts:3](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/databases.ts#L3)

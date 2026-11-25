@@ -8,7 +8,7 @@
 
 > **ExecutedIn** = \{ `kind`: `"database"`; `database`: `string`; `plugin`: `string`; \} \| \{ `kind`: `"memory"`; \}
 
-Defined in: [core/src/plugins/query/explain.ts:60](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L60)
+Defined in: [core/src/plugins/query/explain.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L65)
 
 Where a step ran.
 

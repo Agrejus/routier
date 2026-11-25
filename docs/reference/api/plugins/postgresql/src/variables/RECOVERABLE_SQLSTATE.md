@@ -25,6 +25,10 @@ Exported because a driver whose transport drops the code has to put it back — 
 
 > `readonly` **duplicateTable**: `"42P07"`
 
+### duplicateObject
+
+> `readonly` **duplicateObject**: `"42710"`
+
 ### uniqueViolation
 
 > `readonly` **uniqueViolation**: `"23505"`

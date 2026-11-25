@@ -6,7 +6,7 @@
 
 # Interface: AutoSyncOptions
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L46)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L48)
 
 When the plugin syncs on its own.
 
@@ -20,7 +20,7 @@ for an app that wants a different cadence — or none at all, driving `syncNow()
 
 > `optional` **delayMs**: `number`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L47)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L49)
 
 ***
 
@@ -28,7 +28,7 @@ Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:47](https://github.com/A
 
 > `optional` **maxDelayMs**: `number`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L49)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L51)
 
 Ceiling for the backing-off delay. Default 60_000.
 
@@ -38,7 +38,7 @@ Ceiling for the backing-off delay. Default 60_000.
 
 > `optional` **syncWhenOnline**: `boolean`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:54](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L54)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L56)
 
 Flush the moment the platform reports connectivity is back, instead of waiting out the
 current delay. Default true; ignored where there is no `online` event to listen for.
@@ -49,7 +49,7 @@ current delay. Default true; ignored where there is no `online` event to listen 
 
 > `optional` **minIntervalMs**: `number`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L64)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L66)
 
 Minimum gap between the *starts* of two flushes. Default 250; 0 disables the wait
 (flushes still never overlap). Not applied when `autoSync` is `false` — see below.

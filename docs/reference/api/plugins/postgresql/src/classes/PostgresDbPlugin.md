@@ -45,7 +45,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:13](https://github.com/A
 
 > `readonly` **databaseName**: `string`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:27
+Defined in: plugins/postgres-core/dist/plugin.d.ts:28
 
 See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriver`.
 
@@ -59,7 +59,7 @@ See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriv
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:78
+Defined in: plugins/postgres-core/dist/plugin.d.ts:79
 
 Executes a query operation on the database.
 
@@ -101,7 +101,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:87
+Defined in: plugins/postgres-core/dist/plugin.d.ts:88
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -133,7 +133,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: plugins/postgres-core/dist/plugin.d.ts:113
+Defined in: plugins/postgres-core/dist/plugin.d.ts:114
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

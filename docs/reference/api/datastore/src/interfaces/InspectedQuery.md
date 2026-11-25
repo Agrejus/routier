@@ -6,7 +6,7 @@
 
 # Interface: InspectedQuery
 
-Defined in: [datastore/src/inspection/types.ts:39](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L39)
+Defined in: [datastore/src/inspection/types.ts:41](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L41)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [datastore/src/inspection/types.ts:39](https://github.com/Agrejus/ro
 
 > `readonly` **sequence**: `number`
 
-Defined in: [datastore/src/inspection/types.ts:40](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L40)
+Defined in: [datastore/src/inspection/types.ts:42](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L42)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [datastore/src/inspection/types.ts:40](https://github.com/Agrejus/ro
 
 > `readonly` **collection**: `string`
 
-Defined in: [datastore/src/inspection/types.ts:41](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L41)
+Defined in: [datastore/src/inspection/types.ts:43](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L43)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [datastore/src/inspection/types.ts:41](https://github.com/Agrejus/ro
 
 > `readonly` **live**: `boolean`
 
-Defined in: [datastore/src/inspection/types.ts:42](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L42)
+Defined in: [datastore/src/inspection/types.ts:44](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L44)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [datastore/src/inspection/types.ts:42](https://github.com/Agrejus/ro
 
 > `readonly` **at**: `number`
 
-Defined in: [datastore/src/inspection/types.ts:43](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L43)
+Defined in: [datastore/src/inspection/types.ts:45](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L45)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [datastore/src/inspection/types.ts:43](https://github.com/Agrejus/ro
 
 > `readonly` **durationMs**: `number`
 
-Defined in: [datastore/src/inspection/types.ts:44](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L44)
+Defined in: [datastore/src/inspection/types.ts:46](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L46)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [datastore/src/inspection/types.ts:44](https://github.com/Agrejus/ro
 
 > `readonly` **outcome**: [`InspectedQueryOutcome`](../type-aliases/InspectedQueryOutcome.md)
 
-Defined in: [datastore/src/inspection/types.ts:45](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L45)
+Defined in: [datastore/src/inspection/types.ts:47](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L47)
 
 ***
 
@@ -62,4 +62,4 @@ Defined in: [datastore/src/inspection/types.ts:45](https://github.com/Agrejus/ro
 
 > `readonly` **explanation**: `QueryExplanation`
 
-Defined in: [datastore/src/inspection/types.ts:46](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L46)
+Defined in: [datastore/src/inspection/types.ts:48](https://github.com/Agrejus/routier/blob/main/datastore/src/inspection/types.ts#L48)

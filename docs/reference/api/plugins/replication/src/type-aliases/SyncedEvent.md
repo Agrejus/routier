@@ -41,3 +41,11 @@ Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus
 > **rejected**: `number`
 
 Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)
+
+***
+
+### resolved
+
+> **resolved**: `number`
+
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)

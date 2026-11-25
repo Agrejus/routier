@@ -6,7 +6,7 @@
 
 # Class: PropertyInfo\<T\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:9](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L9)
+Defined in: [core/src/schema/PropertyInfo.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L8)
 
 Represents metadata and utilities for a property in a schema, including its type, name, parent, children, and serialization details.
 
@@ -22,7 +22,7 @@ Represents metadata and utilities for a property in a schema, including its type
 
 > **new PropertyInfo**\<`T`\>(`schema`, `name`, `parent?`): `PropertyInfo`\<`T`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:101](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L101)
+Defined in: [core/src/schema/PropertyInfo.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L102)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:101](https://github.com/Agrejus/rou
 
 > `readonly` **name**: `string`
 
-Defined in: [core/src/schema/PropertyInfo.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L20)
+Defined in: [core/src/schema/PropertyInfo.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L19)
 
 The name of the property.
 
@@ -58,7 +58,7 @@ The name of the property.
 
 > `readonly` **from**: `string` = `null`
 
-Defined in: [core/src/schema/PropertyInfo.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L22)
+Defined in: [core/src/schema/PropertyInfo.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L21)
 
 The name of the property we need to map from.
 
@@ -68,7 +68,7 @@ The name of the property we need to map from.
 
 > `readonly` **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
 
-Defined in: [core/src/schema/PropertyInfo.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L24)
+Defined in: [core/src/schema/PropertyInfo.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L23)
 
 The schema type of the property.
 
@@ -78,7 +78,7 @@ The schema type of the property.
 
 > `readonly` **isNullable**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:27](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L27)
+Defined in: [core/src/schema/PropertyInfo.ts:26](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L26)
 
 Whether the property can be null.
 
@@ -88,7 +88,7 @@ Whether the property can be null.
 
 > `readonly` **isOptional**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L29)
+Defined in: [core/src/schema/PropertyInfo.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L28)
 
 Whether the property is optional.
 
@@ -98,7 +98,7 @@ Whether the property is optional.
 
 > `readonly` **isKey**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:31](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L31)
+Defined in: [core/src/schema/PropertyInfo.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L30)
 
 Whether the property is a key.
 
@@ -108,7 +108,7 @@ Whether the property is a key.
 
 > `readonly` **foreignKeyDefinition**: [`ForeignKey`](../type-aliases/ForeignKey.md)\<`unknown`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L33)
+Defined in: [core/src/schema/PropertyInfo.ts:32](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L32)
 
 Foreign key schema and property
 
@@ -118,7 +118,7 @@ Foreign key schema and property
 
 > `readonly` **isIdentity**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L35)
+Defined in: [core/src/schema/PropertyInfo.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L34)
 
 Whether the property is an identity property.
 
@@ -128,9 +128,19 @@ Whether the property is an identity property.
 
 > `readonly` **isReadonly**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L37)
+Defined in: [core/src/schema/PropertyInfo.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L36)
 
 Whether the property is readonly.
+
+***
+
+### isSensitive
+
+> `readonly` **isSensitive**: `boolean`
+
+Defined in: [core/src/schema/PropertyInfo.ts:38](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L38)
+
+Whether Routier hides the value in logs, `.explain()`, telemetry and devtools. Set by `.sensitive()`, or by a transform that declares `sensitive`.
 
 ***
 
@@ -138,7 +148,7 @@ Whether the property is readonly.
 
 > `readonly` **isEtag**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:38](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L38)
+Defined in: [core/src/schema/PropertyInfo.ts:39](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L39)
 
 ***
 
@@ -146,7 +156,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:38](https://github.com/Agrejus/rout
 
 > `readonly` **etagComparator**: [`EtagComparator`](../type-aliases/EtagComparator.md)\<[`EtagValue`](../type-aliases/EtagValue.md)\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:39](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L39)
+Defined in: [core/src/schema/PropertyInfo.ts:40](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L40)
 
 ***
 
@@ -154,7 +164,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:39](https://github.com/Agrejus/rout
 
 > `readonly` **isUnmapped**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:41](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L41)
+Defined in: [core/src/schema/PropertyInfo.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L42)
 
 Whether the property is unmapped.
 
@@ -164,7 +174,7 @@ Whether the property is unmapped.
 
 > `readonly` **isDistinct**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L43)
+Defined in: [core/src/schema/PropertyInfo.ts:44](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L44)
 
 Whether the property is distinct.
 
@@ -174,7 +184,7 @@ Whether the property is distinct.
 
 > `readonly` **transform**: [`PropertyTransform`](../type-aliases/PropertyTransform.md)\<`unknown`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L53)
+Defined in: [core/src/schema/PropertyInfo.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L54)
 
 A two-way transform between the application value and the stored value, or `null`.
 
@@ -188,7 +198,7 @@ so it can be async, which generated code cannot be.
 
 > `readonly` **indexes**: `string`[]
 
-Defined in: [core/src/schema/PropertyInfo.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L55)
+Defined in: [core/src/schema/PropertyInfo.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L56)
 
 Indexes associated with the property.
 
@@ -198,7 +208,7 @@ Indexes associated with the property.
 
 > `readonly` **injected**: `any` = `null`
 
-Defined in: [core/src/schema/PropertyInfo.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L58)
+Defined in: [core/src/schema/PropertyInfo.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L59)
 
 Any injected value for the property.
 
@@ -208,7 +218,7 @@ Any injected value for the property.
 
 > `readonly` **defaultValue**: `any` = `null`
 
-Defined in: [core/src/schema/PropertyInfo.ts:60](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L60)
+Defined in: [core/src/schema/PropertyInfo.ts:61](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L61)
 
 The default value for the property, if any.
 
@@ -218,7 +228,7 @@ The default value for the property, if any.
 
 > `readonly` **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/PropertyInfo.ts:62](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L62)
+Defined in: [core/src/schema/PropertyInfo.ts:63](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L63)
 
 Serializer for the property value, if any.
 
@@ -228,7 +238,7 @@ Serializer for the property value, if any.
 
 > `readonly` **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/PropertyInfo.ts:64](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L64)
+Defined in: [core/src/schema/PropertyInfo.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L65)
 
 Deserializer for the property value, if any.
 
@@ -238,7 +248,7 @@ Deserializer for the property value, if any.
 
 > `readonly` **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L66)
+Defined in: [core/src/schema/PropertyInfo.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L67)
 
 Function body for computed properties, if any.
 
@@ -248,7 +258,7 @@ Function body for computed properties, if any.
 
 > `readonly` **children**: `PropertyInfo`\<`T`\>[] = `[]`
 
-Defined in: [core/src/schema/PropertyInfo.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L68)
+Defined in: [core/src/schema/PropertyInfo.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L69)
 
 Child properties of this property.
 
@@ -258,7 +268,7 @@ Child properties of this property.
 
 > `readonly` **schema**: [`SchemaBase`](SchemaBase.md)\<`T`, `any`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L70)
+Defined in: [core/src/schema/PropertyInfo.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L71)
 
 The schema this property belongs to.
 
@@ -268,7 +278,7 @@ The schema this property belongs to.
 
 > `readonly` `optional` **innerSchema**: [`SchemaBase`](SchemaBase.md)\<`unknown`, `any`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L72)
+Defined in: [core/src/schema/PropertyInfo.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L73)
 
 The inner schema if this property is an array.
 
@@ -278,7 +288,7 @@ The inner schema if this property is an array.
 
 > `readonly` **dimensions**: `number`
 
-Defined in: [core/src/schema/PropertyInfo.ts:74](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L74)
+Defined in: [core/src/schema/PropertyInfo.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L75)
 
 How many numbers this property holds if it is a vector, `null` otherwise.
 
@@ -288,7 +298,7 @@ How many numbers this property holds if it is a vector, `null` otherwise.
 
 > `readonly` **maxLength**: `number`
 
-Defined in: [core/src/schema/PropertyInfo.ts:76](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L76)
+Defined in: [core/src/schema/PropertyInfo.ts:77](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L77)
 
 The longest value this property is declared to hold, `null` if it declares none.
 
@@ -298,7 +308,7 @@ The longest value this property is declared to hold, `null` if it declares none.
 
 > `readonly` **isSearchable**: `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:83](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L83)
+Defined in: [core/src/schema/PropertyInfo.ts:84](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L84)
 
 Whether this property may be tokenised into a full-text search index.
 
@@ -311,7 +321,7 @@ the type together, not copied.
 
 > `readonly` **literals**: `T`[]
 
-Defined in: [core/src/schema/PropertyInfo.ts:85](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L85)
+Defined in: [core/src/schema/PropertyInfo.ts:86](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L86)
 
 Literal values allowed for this property.
 
@@ -321,7 +331,7 @@ Literal values allowed for this property.
 
 > `readonly` **tags**: `string`[]
 
-Defined in: [core/src/schema/PropertyInfo.ts:87](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L87)
+Defined in: [core/src/schema/PropertyInfo.ts:88](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L88)
 
 Tags passed from the schema
 
@@ -331,7 +341,7 @@ Tags passed from the schema
 
 > `readonly` `optional` **parent**: `PropertyInfo`\<`T`\>
 
-Defined in: [core/src/schema/PropertyInfo.ts:90](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L90)
+Defined in: [core/src/schema/PropertyInfo.ts:91](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L91)
 
 The parent property, if any.
 
@@ -343,7 +353,7 @@ The parent property, if any.
 
 > **get** **id**(): `string`
 
-Defined in: [core/src/schema/PropertyInfo.ts:11](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L11)
+Defined in: [core/src/schema/PropertyInfo.ts:10](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L10)
 
 ##### Returns
 

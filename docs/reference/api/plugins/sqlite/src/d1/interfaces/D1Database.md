@@ -6,7 +6,7 @@
 
 # Interface: D1Database
 
-Defined in: [plugins/sqlite/src/d1.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L64)
+Defined in: [plugins/sqlite/src/d1.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L65)
 
 The subset of Cloudflare's `D1Database` this plugin uses.
 
@@ -16,7 +16,7 @@ The subset of Cloudflare's `D1Database` this plugin uses.
 
 > **prepare**(`sql`): [`D1PreparedStatement`](D1PreparedStatement.md)
 
-Defined in: [plugins/sqlite/src/d1.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L65)
+Defined in: [plugins/sqlite/src/d1.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L66)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [plugins/sqlite/src/d1.ts:65](https://github.com/Agrejus/routier/blo
 
 > **batch**\<`T`\>(`statements`): `Promise`\<`object`[]\>
 
-Defined in: [plugins/sqlite/src/d1.ts:72](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L72)
+Defined in: [plugins/sqlite/src/d1.ts:73](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L73)
 
 Runs every statement as ONE transaction: all of them apply, or none does.
 

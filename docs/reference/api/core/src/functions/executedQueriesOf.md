@@ -8,7 +8,7 @@
 
 > **executedQueriesOf**(`explanation`): [`ExecutedQuery`](../type-aliases/ExecutedQuery.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:411](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L411)
+Defined in: [core/src/plugins/query/explain.ts:416](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L416)
 
 Every statement the query ran, across every database it touched, in execution order.
 

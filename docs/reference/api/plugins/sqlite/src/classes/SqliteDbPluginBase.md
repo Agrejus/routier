@@ -141,7 +141,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/plugin.ts:372](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L372)
+Defined in: [plugins/sqlite/src/plugin.ts:364](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L364)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

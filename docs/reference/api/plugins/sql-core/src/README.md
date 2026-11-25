@@ -17,6 +17,7 @@
 - [SqlEtag](type-aliases/SqlEtag.md)
 - [SqlJoinStatement](type-aliases/SqlJoinStatement.md)
 - [SqlDialectName](type-aliases/SqlDialectName.md)
+- [ListSource](type-aliases/ListSource.md)
 - [PlaceholderCursor](type-aliases/PlaceholderCursor.md)
 - [ToSqlOptions](type-aliases/ToSqlOptions.md)
 - [EntityUpdate](type-aliases/EntityUpdate.md)
@@ -29,6 +30,7 @@
 - [CASING\_CALLS](variables/CASING_CALLS.md)
 - [JOIN\_OUTER\_ALIAS](variables/JOIN_OUTER_ALIAS.md)
 - [JOIN\_INNER\_ALIAS](variables/JOIN_INNER_ALIAS.md)
+- [JSON\_LIST\_FROM](variables/JSON_LIST_FROM.md)
 
 ## Functions
 

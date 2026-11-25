@@ -8,7 +8,7 @@
 
 > **PlaceholderCursor** = `object`
 
-Defined in: [plugins/sql-core/src/sql.ts:635](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L635)
+Defined in: [plugins/sql-core/src/sql.ts:657](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L657)
 
 The placeholder counter, as something a nested render can read and advance.
 
@@ -21,7 +21,7 @@ does — and a nested render that starts at the wrong index numbers every placeh
 
 > **next**(): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:636](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L636)
+Defined in: [plugins/sql-core/src/sql.ts:658](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L658)
 
 #### Returns
 
@@ -33,7 +33,7 @@ Defined in: [plugins/sql-core/src/sql.ts:636](https://github.com/Agrejus/routier
 
 > **at**(): `number`
 
-Defined in: [plugins/sql-core/src/sql.ts:637](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L637)
+Defined in: [plugins/sql-core/src/sql.ts:659](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L659)
 
 #### Returns
 
@@ -45,7 +45,7 @@ Defined in: [plugins/sql-core/src/sql.ts:637](https://github.com/Agrejus/routier
 
 > **skip**(`count`): `void`
 
-Defined in: [plugins/sql-core/src/sql.ts:638](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L638)
+Defined in: [plugins/sql-core/src/sql.ts:660](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L660)
 
 #### Parameters
 

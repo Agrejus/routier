@@ -8,7 +8,7 @@
 
 > **parseSelector**(`schema`, `selector`): [`ParsedSelector`](../type-aliases/ParsedSelector.md)
 
-Defined in: [core/src/expressions/parser.ts:2755](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2755)
+Defined in: [core/src/expressions/parser.ts:2756](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2756)
 
 Reads a sort, map, group or `nearest` selector with the grammar filters use, for what its value is
 read from.

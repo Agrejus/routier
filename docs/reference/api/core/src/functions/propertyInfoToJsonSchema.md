@@ -8,7 +8,7 @@
 
 > **propertyInfoToJsonSchema**(`property`, `target`, `visited`, `useOutputType`): `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:429](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L429)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:432](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L432)
 
 Converts a Routier PropertyInfo to a JSON Schema property definition.
 

@@ -6,7 +6,7 @@
 
 # Interface: SyncHooks\<TError\>
 
-Defined in: [plugins/replication/src/syncHooks.ts:58](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L58)
+Defined in: [plugins/replication/src/syncHooks.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L64)
 
 ## Extended by
 
@@ -25,7 +25,7 @@ Defined in: [plugins/replication/src/syncHooks.ts:58](https://github.com/Agrejus
 
 > `optional` **onEvent**: (`event`) => `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L59)
+Defined in: [plugins/replication/src/syncHooks.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L65)
 
 #### Parameters
 
@@ -43,7 +43,7 @@ Defined in: [plugins/replication/src/syncHooks.ts:59](https://github.com/Agrejus
 
 > `optional` **onError**: (`error`) => `void`
 
-Defined in: [plugins/replication/src/syncHooks.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L60)
+Defined in: [plugins/replication/src/syncHooks.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L66)
 
 #### Parameters
 

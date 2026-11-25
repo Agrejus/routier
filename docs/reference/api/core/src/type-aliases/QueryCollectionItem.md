@@ -8,7 +8,7 @@
 
 > **QueryCollectionItem**\<`T`, `K`\> = `object`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L8)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:9](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L9)
 
 ## Type Parameters
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:8](https://github.
 
 > **index**: `number`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L8)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:9](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L9)
 
 ***
 
@@ -34,4 +34,4 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:8](https://github.
 
 > **option**: [`QueryOption`](QueryOption.md)\<`T`, `K`\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L8)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:9](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L9)
