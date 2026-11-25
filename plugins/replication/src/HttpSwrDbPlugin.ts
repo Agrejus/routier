@@ -32,8 +32,8 @@ import { KeyedMutex, notModifiedError, RequestPacer } from './httpUtils';
 import { addOutcomes, bodyForUnits, NOTHING_DELIVERED, QueuedWriteSender, type DeliveryOutcome } from './queuedWrites';
 import { runWithOnError, statusOf, type ActionKit, type Settlement } from './requestFailures';
 import { emitEvent, type SwrRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
-import { createConflictSettler, isConflictResponse, isRecord, type ConflictHandlingOptions, type ResolvedRow } from './conflictSettler';
-import { ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from '@routier/core/expressions';
+import { baseOf, createConflictSettler, isConflictResponse, isRecord, sameKeys, type ConflictHandlingOptions, type ResolvedRow } from './conflictSettler';
+import { queryByKeys } from './keyQuery';
 
 /** What a sync moved. Returned by `syncNow()` and reported as the `synced` event. */
 export type SyncOutcome = DeliveryOutcome;
@@ -155,7 +155,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly unsyncedQueue: UnsyncedQueue;
     private readonly sender: QueuedWriteSender;
     /** Set when a conflict resolver is configured, which needs each update's values before the edit. */
-    readonly receivesPreviousValues: boolean;
+    private readonly resolvesConflicts: boolean;
     private readonly onEvent?: (event: SyncEvent) => void;
     private readonly onError?: (error: SwrRequestError) => void;
     /**
@@ -246,7 +246,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 },
             }),
         });
-        this.receivesPreviousValues = options.resolveConflict != null;
+        this.resolvesConflicts = options.resolveConflict != null;
         this.postOnPersist = options?.postOnPersist ?? true;
         this.writeBatchDelayMs = options.writeBatchDelayMs ?? DEFAULT_WRITE_BATCH_DELAY_MS;
         this.autoSync = resolveAutoSync(options);
@@ -784,45 +784,53 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     }
 
     /** Reads one row from the server by its key, through the same GET as a filtered read. */
-    private fetchRemoteRow(schema: CompiledSchema<UnknownRecord>, local: UnknownRecord): Promise<UnknownRecord | null> {
-        const keys = schema.idProperties.map(property => ({ property, value: local[property.getResolvedName()] }));
-        const expression = keys
-            .map(({ property, value }): Expression => new ComparatorExpression({
-                comparator: 'equals',
-                negated: false,
-                strict: true,
-                left: new PropertyExpression({ property }),
-                right: new ValueExpression({ value }),
-            }))
-            .reduce((left, right) => new OperatorExpression({ operator: '&&', left, right }));
-        const options = QueryOptionsCollection.EMPTY<UnknownRecord>();
+    private async fetchRemoteRow(schema: CompiledSchema<UnknownRecord>, local: UnknownRecord): Promise<UnknownRecord | null> {
+        const [row] = await queryByKeys(this.httpPlugin, this.lastSeenSchemas, schema, [local], HttpSwrDbPlugin.name);
 
-        options.add('filter', {
-            filter: (row: UnknownRecord) => keys.every(({ property, value }) => row[property.getResolvedName()] === value),
-            expression,
-            params: undefined,
-        });
+        return row ?? null;
+    }
 
-        return new Promise((resolve, reject) => {
-            this.httpPlugin.query({
-                id: uuid(8),
-                schemas: this.lastSeenSchemas ?? new SchemaCollection(),
-                source: HttpSwrDbPlugin.name,
-                action: 'query',
-                explain: false,
-                executedQueries: [],
-                operation: new Query<UnknownRecord, UnknownRecord>(options, schema),
-            }, result => {
-                if (result.ok === Result.ERROR) {
-                    reject(result.error);
-                    return;
+    /** The bases a conflict resolver needs, or none when there is no resolver or they cannot be read. */
+    private async basesFor(event: DbPluginBulkPersistEvent): Promise<Map<unknown, UnknownRecord>> {
+        if (this.resolvesConflicts === false) {
+            return new Map();
+        }
+
+        try {
+            return await this.readBases(event);
+        } catch (error) {
+            logger.warn('[HttpSwrDbPlugin] could not read the rows before a save; a conflict on them merges without a base', { eventId: event.id, error });
+            return new Map();
+        }
+    }
+
+    /**
+     * What each updated row's changed fields held before this save, read from the store before
+     * the save writes over it. Only read when a conflict resolver needs it.
+     */
+    private async readBases(event: DbPluginBulkPersistEvent): Promise<Map<unknown, UnknownRecord>> {
+        const bases = new Map<unknown, UnknownRecord>();
+
+        for (const [schemaId, changes] of event.operation) {
+            const updated = changes.updates.map(update => update.entity).filter(isRecord);
+
+            if (updated.length === 0) {
+                continue;
+            }
+
+            const schema = event.schemas.get<UnknownRecord>(schemaId);
+            const stored = await queryByKeys(this.swrStore, event.schemas, schema, updated, HttpSwrDbPlugin.name);
+
+            for (const update of changes.updates) {
+                const found = stored.find(row => isRecord(update.entity) && sameKeys(schema, row, update.entity));
+
+                if (found != null) {
+                    bases.set(update.entity, baseOf(schema, found, update.delta));
                 }
+            }
+        }
 
-                const [row] = this.queryResultToArray(result.data);
-
-                resolve(isRecord(row) ? row : null);
-            });
-        });
+        return bases;
     }
 
     /**
@@ -1201,7 +1209,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         });
     }
 
-    private async queueChanges(event: DbPluginBulkPersistEvent): Promise<void> {
+    private async queueChanges(event: DbPluginBulkPersistEvent, bases: Map<unknown, UnknownRecord>): Promise<void> {
         for (const [schemaId, changes] of event.operation) {
             if (!changes.hasItems) continue;
 
@@ -1216,7 +1224,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                     kind: 'update' as const,
                     entity: u.entity as unknown,
                     payload: buildUpdatePayload(schemaRecord, u.entity, u.delta),
-                    base: u.previous ?? null,
+                    base: bases.get(u.entity) ?? null,
                 })),
                 ...removes.map((entity) => ({ kind: 'remove' as const, entity: entity as unknown })),
             ]);
@@ -1236,8 +1244,12 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // Phase 1 — local: persist to the SWR store and ack the caller. Any failure
         // HERE is a real persist failure and surfaces through done().
         let localPersistResult: BulkPersistResult;
+        let queuedBases = new Map<unknown, UnknownRecord>();
         try {
+            const bases = await this.basesFor(event);
+
             localPersistResult = await this.persistToSwrStore(event);
+            queuedBases = bases;
         } catch (err) {
             logger.error('[HttpSwrDbPlugin] bulkPersist failed against the SWR store', { eventId: event.id, error: err });
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
@@ -1262,7 +1274,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // durable by the time the caller sees success. A queue-write failure fails the
         // persist: success without a recorded obligation would be a lie.
         try {
-            await this.queueChanges(event);
+            await this.queueChanges(event, queuedBases);
         } catch (err) {
             logger.error('[HttpSwrDbPlugin] failed to record sync obligation; failing persist', { eventId: event.id, error: err });
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));

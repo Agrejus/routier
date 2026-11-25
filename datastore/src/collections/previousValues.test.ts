@@ -211,35 +211,6 @@ describe('previous values', () => {
         expect('previous' in seen[0]).toBe(false);
     });
 
-    it('reaches a plugin that asks for it with receivesPreviousValues', async () => {
-        class AskingPlugin extends MemoryPlugin {
-            readonly receivesPreviousValues = true;
-            readonly seen: unknown[] = [];
-
-            override bulkPersist(event: Parameters<MemoryPlugin['bulkPersist']>[0], done: Parameters<MemoryPlugin['bulkPersist']>[1]) {
-                for (const [, schemaChanges] of event.operation) {
-                    this.seen.push(...schemaChanges.updates);
-                }
-
-                super.bulkPersist(event, done);
-            }
-        }
-
-        class Store extends DataStore {
-            articles = this.collection(articleSchema).proxy().create();
-        }
-
-        const plugin = new AskingPlugin('prev-asked');
-        const store = new Store(plugin);
-        const [article] = await store.articles.addAsync({ title: 'Copper Pipe', body: 'b', views: 0 });
-        await store.saveChangesAsync();
-
-        article.title = 'Copper Wire';
-        await store.saveChangesAsync();
-
-        expect(plugin.seen).toEqual([expect.objectContaining({ previous: { title: 'Copper Pipe' } })]);
-    });
-
     it('reaches an audit declaration, which is where a participant reads it', async () => {
         const historySchema = s.define('prev_history', {
             id: s.string().key().identity(),

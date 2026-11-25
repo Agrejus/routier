@@ -266,8 +266,37 @@ describe('HttpSwrDbPlugin conflict resolution', () => {
         expect(events.some(event => event.type === 'conflict-resolved')).toBe(false);
     });
 
-    it('asks only for the previous values when a resolver is set', () => {
-        expect(open({ resolveConflict: fieldMerge() }).plugin.receivesPreviousValues).toBe(true);
-        expect(open().plugin.receivesPreviousValues).toBe(false);
+    const storeReadsDuringSave = async (options: Partial<HttpSwrDbPluginOptions>) => {
+        const { plugin, store } = open(options);
+        const query = jest.spyOn(Reflect.get(plugin, 'swrStore') as MemoryPlugin, 'query');
+        const todo = await store.todos.firstAsync(x => x.id === 't1');
+        const before = query.mock.calls.length;
+
+        todo.title = 'Mine';
+        await store.saveChangesAsync();
+
+        return query.mock.calls.length - before;
+    };
+
+    it('reads the rows before a save when a resolver is set', async () => {
+        expect(await storeReadsDuringSave({ resolveConflict: fieldMerge() })).toBe(1);
+    });
+
+    it('does not read the rows before a save without a resolver', async () => {
+        expect(await storeReadsDuringSave({})).toBe(0);
+    });
+
+    it('still queues the save, with no base, when the rows before it cannot be read', async () => {
+        conflictOnce({ ...SERVER, version: 2 });
+        const resolver = jest.fn<ConflictResolver>(() => null);
+        const { plugin, store } = open({ resolveConflict: resolver });
+        const todo = await store.todos.firstAsync(x => x.id === 't1');
+
+        jest.spyOn(Reflect.get(plugin, 'swrStore') as MemoryPlugin, 'query').mockImplementationOnce((_, done) => done({ ok: 'error', error: new Error('store offline') } as never));
+        todo.title = 'Mine';
+        await store.saveChangesAsync();
+        await plugin.syncNow();
+
+        expect(resolver).toHaveBeenCalledWith(expect.objectContaining({ base: {}, local: expect.objectContaining({ title: 'Mine' }) }));
     });
 });

@@ -4,7 +4,7 @@ import type { CompiledSchema } from '@routier/core/schema';
 import type { UnknownRecord } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpStatusError, NetworkError } from './httpUtils';
-import { createConflictSettler, isConflictResponse, remoteInResponse, requeuedChange } from './conflictSettler';
+import { baseOf, createConflictSettler, isConflictResponse, remoteInResponse, requeuedChange, sameKeys } from './conflictSettler';
 import { UnsyncedQueue, type UnsyncedFlushUnit } from './UnsyncedQueue';
 
 const schema: CompiledSchema<UnknownRecord> = s.define('settlerTodos', {
@@ -46,6 +46,29 @@ describe('remoteInResponse', () => {
         expect(remoteInResponse(schema, local, conflictWith('stale'))).toBeNull();
         expect(remoteInResponse(schema, local, conflictWith([{ id: 't1' }]))).toBeNull();
         expect(remoteInResponse(schema, local, new NetworkError(new Error('offline')))).toBeNull();
+    });
+});
+
+describe('baseOf', () => {
+    const stored = { id: 't1', title: 'Write', version: 1 };
+
+    it('picks the fields the update changes', () => {
+        expect(baseOf(schema, stored, { title: 'Mine' })).toEqual({ title: 'Write' });
+    });
+
+    it('picks every root field when the update writes the whole row', () => {
+        expect(baseOf(schema, stored, {})).toEqual(stored);
+    });
+
+    it('leaves out a field the stored row does not hold', () => {
+        expect(baseOf(schema, { id: 't1', title: 'Write' }, { version: 2 })).toEqual({});
+    });
+});
+
+describe('sameKeys', () => {
+    it('compares rows by key alone', () => {
+        expect(sameKeys(schema, { id: 't1', title: 'a' }, { id: 't1', title: 'b' })).toBe(true);
+        expect(sameKeys(schema, { id: 't1' }, { id: 't2' })).toBe(false);
     });
 });
 

@@ -42,6 +42,8 @@ export const isRecord = <TValue>(value: TValue): value is TValue & UnknownRecord
 
 const idsOf = (schema: Schema, row: UnknownRecord) => JSON.stringify(schema.idProperties.map(property => row[property.getResolvedName()]));
 
+export const sameKeys = (schema: Schema, left: UnknownRecord, right: UnknownRecord): boolean => idsOf(schema, left) === idsOf(schema, right);
+
 /** The server's row, when the conflict response carries it as the body or as its `current` or `remote` field. */
 export const remoteInResponse = (schema: Schema, local: UnknownRecord, error: Error): UnknownRecord | null => {
     const body = error instanceof HttpStatusError ? error.responseBody : null;
@@ -63,6 +65,17 @@ const toApp = (schema: Schema, row: UnknownRecord): UnknownRecord => schema.dese
 const toStored = (schema: Schema, row: UnknownRecord): UnknownRecord => schema.serialize(row as never);
 
 const rootColumns = (schema: Schema) => schema.properties.filter(property => property.parent == null);
+
+/**
+ * The values `stored` holds for the fields an update changes: the fields in `delta`, or every
+ * root field when the delta is empty, which means the whole row was written.
+ */
+export const baseOf = (schema: Schema, stored: UnknownRecord, delta: UnknownRecord): UnknownRecord => {
+    const changed = Object.keys(delta);
+    const columns = changed.length > 0 ? changed : rootColumns(schema).map(property => property.getResolvedName());
+
+    return Object.fromEntries(columns.filter(column => column in stored).map(column => [column, stored[column]]));
+};
 
 const appBase = (schema: Schema, base: UnknownRecord) =>
     schema.deserializePartial(base, rootColumns(schema).filter(property => property.getResolvedName() in base));

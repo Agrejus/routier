@@ -237,12 +237,9 @@ export class DataStore implements Disposable {
              * Stripped rather than never added, because the participants read it off the same
              * assembled changes the plugin is about to be given. Leaving it on would put the
              * OLD value of every changed property into every plugin's payload — and over a
-             * wire, for the HTTP family — to be ignored by all of them. A plugin that needs
-             * them says so with `receivesPreviousValues`.
+             * wire, for the HTTP family — to be ignored by all of them.
              */
-            if (this.dbPlugin.receivesPreviousValues !== true) {
-                stripPreviousValues(changes);
-            }
+            stripPreviousValues(changes);
 
             const event: DbPluginBulkPersistEvent = {
                 id: uuid(8),
