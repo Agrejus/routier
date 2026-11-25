@@ -3,9 +3,9 @@ import { Expression } from "../../expressions/types";
 import { QueryOption, QueryOrdering } from "../query/types";
 import { compareBySortKeys, nextSortKeys, sortKeysEndingWith } from "./sortKeys";
 
-type Row = { group: string | null; rank: number };
+type Row = { group: string | null; rank: number | null; at?: Date };
 
-const sortBy = (selector: (row: Row) => string | number | null, direction: QueryOrdering): QueryOption<Row, "sort"> => ({
+const sortBy = (selector: (row: Row) => string | number | Date | null | undefined, direction: QueryOrdering): QueryOption<Row, "sort"> => ({
     name: "sort",
     value: { selector, direction, propertyName: "p" },
     target: "database",
@@ -69,6 +69,33 @@ describe("compareBySortKeys", () => {
         expect(compare({ group: null, rank: 0 }, { group: "a", rank: 0 })).toBe(-1);
         expect(compare({ group: "a", rank: 0 }, { group: null, rank: 0 })).toBe(1);
         expect(compare({ group: null, rank: 0 }, { group: null, rank: 0 })).toBe(0);
+    });
+
+    it("puts null before a negative number", () => {
+        const compare = compareBySortKeys([sortBy(row => row.rank, QueryOrdering.Ascending)]);
+
+        expect(compare({ group: "a", rank: -5 }, { group: "a", rank: null })).toBe(1);
+        expect(compare({ group: "a", rank: null }, { group: "a", rank: -5 })).toBe(-1);
+    });
+
+    it("treats two dates with the same time as a tie", () => {
+        const byAt = sortBy(row => row.at, QueryOrdering.Ascending);
+        const tied: Row[] = [
+            { group: "a", rank: 2, at: new Date("2026-01-01T00:00:00.000Z") },
+            { group: "a", rank: 1, at: new Date("2026-01-01T00:00:00.000Z") },
+        ];
+
+        expect(order(tied, [byAt, sortBy(row => row.rank, QueryOrdering.Ascending)]).map(row => row.rank)).toEqual([1, 2]);
+    });
+
+    it("orders dates by their time", () => {
+        const byAt = sortBy(row => row.at, QueryOrdering.Descending);
+        const dated: Row[] = [
+            { group: "a", rank: 1, at: new Date("2026-01-01T00:00:00.000Z") },
+            { group: "a", rank: 2, at: new Date("2026-02-01T00:00:00.000Z") },
+        ];
+
+        expect(order(dated, [byAt]).map(row => row.rank)).toEqual([2, 1]);
     });
 
     it("returns 1 for a greater value and -1 for a lesser one", () => {
