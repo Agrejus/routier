@@ -119,8 +119,8 @@ suite('MongoDB via testcontainers', () => {
 
             const reported = executedQueriesOf(explanation);
             expect(reported.length).toBeGreaterThan(0);
-            expect(reported[0].text).toContain('.find(');
-            expect(reported[0].text).toContain('beta');
+            expect(reported[0].text).toBe('db.e2e_mongo_orders.find({ "reference": { "$eq": ? } })');
+            expect(reported[0].parameters).toEqual(['beta']);
         });
 
         it('filters on a nested property with dot notation', async () => {
