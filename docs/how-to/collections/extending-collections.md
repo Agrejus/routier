@@ -10,7 +10,7 @@ You can extend a generated collection to add domain-specific helpers while prese
 
 - [Basic Example](#basic-example)
 - [Adding Helper Methods](#adding-helper-methods)
-- [Combining Operations](#combining-operations)
+- [Passing Your Own Values](#passing-your-own-values)
 - [Recipe: Upsert and Remove by Query](#recipe-upsert-and-remove-by-query)
 - [Recipe: Undo and Redo](#recipe-undo-and-redo)
 - [Notes](#notes)
@@ -18,19 +18,19 @@ You can extend a generated collection to add domain-specific helpers while prese
 
 ### Basic Example
 
-The simplest way to extend a collection is to add custom methods using the `create()` method:
+Write a class that extends `Collection`. Then pass a function to `create()` that builds it:
 
 <<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-1.ts
 
-This example shows how to add helper methods that:
-
-- Combine query and create operations (`findOrCreateByEmailAsync`)
-- Combine querying and updates in a single operation (`activatePendingUsersAsync`)
-- Maintain full type safety and change tracking
+- `create()` calls your function with two arguments. The second one, `dependencies`, is what the base `Collection` needs. Pass it to your class.
+- Give the property its type: `users: UserCollection = ...`.
+- `findOrCreateByEmailAsync` combines a query and an add.
+- `activatePendingUsersAsync` combines a query and an update.
+- A query reads saved rows, so the example saves the new user before it activates pending users.
 
 ### Adding Helper Methods
 
-For more than a method or two, write a named class that extends `Collection`. Pass it to `create()`, and give the property its type:
+A collection class can hold as many methods as you need:
 
 <<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-2.ts
 
@@ -39,6 +39,18 @@ This example demonstrates:
 - Methods that combine multiple operations (`restockAndUpdatePriceAsync`)
 - Query helpers with parameters (`findLowStockAsync`)
 - Bulk operations that work with multiple entities (`bulkRestockAsync`)
+
+### Passing Your Own Values
+
+Your class can take more than `dependencies`. Add your own constructor parameters, and pass the values in the function you give to `create()`:
+
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/own-values.ts
+
+- `OrderCollection` takes a `Clock` after `dependencies`. Its constructor passes `dependencies` to `super`.
+- `OrderDependencies` is the type of the base constructor's first parameter.
+- The store takes the clock in its own constructor. It builds the collection there, after `super(...)`, so the clock is in scope.
+- In tests, pass a fixed clock. `placedAt` is then the same on every run.
+- Pass a logger, an API client or the signed-in user the same way.
 
 ### Recipe: Upsert and Remove by Query
 
@@ -61,12 +73,13 @@ The collection can keep its own undo and redo stacks. `edit` records each row be
 
 ### Notes
 
-- Write a named class that extends `Collection` and pass `(_, dependencies) => new MyCollection(dependencies)` to `create()`. Give the property its type, as in `products: ProductCollection = ...`. Without the type, TypeScript's `strict` mode reports that the property "implicitly has type 'any'".
-- The `create((Instance, ...args) => new class extends Instance { ... })` pattern also works for a quick helper. Call `super(...args)` in its constructor.
-- Prefer adding cohesive, high-level helpers (e.g. `addWithDefaults`, `findLowStock`, `bulkRestock`) rather than simple wrappers.
-- All methods from the selected mode remain available (`where`, `map`, `toArrayAsync`, and—for writable modes—`addAsync`, `removeAsync`, attachments, etc.).
-- Extended collections maintain full type safety - TypeScript will infer types from your schema automatically.
-- Changes made through custom methods are tracked like standard operations. Persist them with `store.saveChangesAsync()`.
+- Write a named class that extends `Collection`, and pass `(_, dependencies) => new MyCollection(dependencies)` to `create()`.
+- Give the property its type, as in `products: ProductCollection = ...`. Without it, TypeScript's `strict` mode reports that the property "implicitly has type 'any'".
+- The first argument to your function is the base collection class. An anonymous `class extends` that argument hits the same `strict` error, so prefer a named class.
+- Prefer cohesive, high-level helpers (e.g. `addWithDefaults`, `findLowStock`, `bulkRestock`) over simple wrappers.
+- All methods from the selected mode remain available (`where`, `map`, `toArrayAsync`, and, for writable modes, `addAsync`, `removeAsync`, attachments, etc.).
+- Extended collections keep full type safety. TypeScript infers types from your schema.
+- Changes made through custom methods are tracked like any other change. Persist them with `store.saveChangesAsync()`.
 
 ### When to Use
 
@@ -76,11 +89,3 @@ Extend collections when you want to:
 - **Provide domain-specific APIs**: Create methods that express your business logic clearly (e.g. `activatePendingUsers` instead of querying and updating manually).
 - **Combine multiple operations**: Group related operations into single methods that make your code more readable and maintainable.
 - **Add validation or business rules**: Enforce domain constraints in custom methods before calling base collection methods.
-
-### Combining Operations
-
-Extended collections work seamlessly with all base collection features. You can use queries, change tracking, and persistence within your custom methods:
-
-
-<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-1.ts
-
