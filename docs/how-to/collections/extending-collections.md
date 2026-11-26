@@ -47,7 +47,7 @@ Your class can take more than `dependencies`. Add your own constructor parameter
 <<< @/_snippets/code/from-docs/how-to/collections/extending-collections/own-values.ts
 
 - `OrderCollection` takes a `Clock` after `dependencies`. Its constructor passes `dependencies` to `super`.
-- `OrderDependencies` is the type of the base constructor's first parameter.
+- `CollectionDependencies` is the type of `dependencies`. Import it from `@routier/datastore`.
 - The store takes the clock in its own constructor. It builds the collection there, after `super(...)`, so the clock is in scope.
 - In tests, pass a fixed clock. `placedAt` is then the same on every run.
 - Pass a logger, an API client or the signed-in user the same way.

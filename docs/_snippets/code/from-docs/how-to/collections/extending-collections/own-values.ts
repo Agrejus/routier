@@ -1,4 +1,5 @@
 import { Collection, DataStore } from "@routier/datastore";
+import type { CollectionDependencies } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { s } from "@routier/core/schema";
 import type { InferRoot, InferType } from "@routier/core/schema";
@@ -13,14 +14,13 @@ const orderSchema = s
 
 type OrderRoot = InferRoot<typeof orderSchema>;
 type Order = InferType<typeof orderSchema>;
-type OrderDependencies = ConstructorParameters<typeof Collection<OrderRoot>>[0];
 
 interface Clock {
     now(): Date;
 }
 
 class OrderCollection extends Collection<OrderRoot> {
-    constructor(dependencies: OrderDependencies, private readonly clock: Clock) {
+    constructor(dependencies: CollectionDependencies<OrderRoot>, private readonly clock: Clock) {
         super(dependencies);
     }
 

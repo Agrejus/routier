@@ -3,6 +3,15 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Export CollectionDependencies (2026-11-26)
+
+Releases `@routier/datastore` 0.5.1.
+
+### Added — @routier/datastore 0.5.1
+
+- `CollectionDependencies` is exported as a type. A collection class that takes its own
+  constructor values can type its first parameter as `CollectionDependencies<TRoot>` (#152).
+
 ## Conflict resolution, cursor pagination, sensitive fields and native explain (2026-11-25)
 
 Releases `@routier/core` 0.10.0, `@routier/datastore` 0.5.0, `@routier/replication-plugin` 0.7.0
