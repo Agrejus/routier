@@ -129,11 +129,11 @@ See [Full-Text Search](/concepts/queries/full-text-search) for search, tokenizer
 
 ## Extending a collection
 
-`create(factory)` receives the selected collection constructor and its dependencies:
+`create(factory)` calls your function with the base collection class and its dependencies. Pass the dependencies to your class, and give the property its type:
 
 ```ts
-products = this.collection(productSchema).proxy().create(
-  (CollectionType, dependencies) => new ProductCollection(dependencies)
+products: ProductCollection = this.collection(productSchema).proxy().create(
+  (_, dependencies) => new ProductCollection(dependencies)
 );
 ```
 
